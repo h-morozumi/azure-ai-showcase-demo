@@ -64,6 +64,18 @@ VITE_API_URL=http://localhost:8000
 pnpm dev
 ```
 
+#### Docker を使用したフロントエンドの起動
+
+```bash
+# プロジェクトルートから実行
+cd frontend
+docker build -t azure-ai-showcase-frontend .
+docker run --rm -p 4173:80 azure-ai-showcase-frontend
+```
+
+実行後、ブラウザーで http://localhost:4173 を開くとビルド済みのフロントエンドが確認できます。
+
+
 ### 3. バックエンドのセットアップ
 
 ```bash
