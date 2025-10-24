@@ -1,0 +1,17 @@
+# GitHub Copilot Code Review 設定ファイル
+# 参考: https://docs.github.com/en/copilot/using-github-copilot/github-copilot-code-review
+
+copilot:
+  # 使用言語の指定
+  language: "ja"
+
+  # コメントトーン（"friendly" / "professional" / "concise" など）
+  tone: "friendly"
+
+  # 指示（レビューコメントのスタイルや目的を定義）
+  instructions: |
+    すべてのレビューコメントは日本語で出力してください。
+    コメントは丁寧で、開発者にとってわかりやすい表現にしてください。
+    指摘する際は、理由や改善例を簡潔に説明してください。
+    コードスタイルやロジックに関する提案も含めてください。
+    必要に応じて改善例のコードを示してください。
