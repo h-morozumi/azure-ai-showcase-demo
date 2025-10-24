@@ -5,8 +5,8 @@ copilot:
   # 使用言語の指定
   language: "ja"
 
-  # コメントトーン（"polite" / "casual" / "concise" など）
-  tone: "polite"
+  # コメントトーン（"friendly" / "professional" / "concise" など）
+  tone: "friendly"
 
   # 指示（レビューコメントのスタイルや目的を定義）
   instructions: |
