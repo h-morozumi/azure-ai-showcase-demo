@@ -2,32 +2,33 @@ import { useState, useMemo } from 'react';
 import { DemoCard } from '../components/DemoCard';
 import { DemoFilter } from '../components/DemoFilter';
 import { mockDemos } from '../utils/mockData';
-import type { AzureService } from '../types/demo';
+import type { AzureService, Demo } from '../types/demo';
 
 /**
  * トップページ - デモショーケース一覧
  */
 export const TopPage: React.FC = () => {
   const [selectedTags, setSelectedTags] = useState<AzureService[]>([]);
+  const [demos] = useState<Demo[]>(mockDemos);
 
   // すべてのタグを抽出（重複を除く）
   const allTags = useMemo(() => {
     const tags = new Set<AzureService>();
-    mockDemos.forEach((demo) => {
+    demos.forEach((demo) => {
       demo.tags.forEach((tag) => tags.add(tag));
     });
     return Array.from(tags).sort();
-  }, []);
+  }, [demos]);
 
   // フィルタリングされたデモ
   const filteredDemos = useMemo(() => {
     if (selectedTags.length === 0) {
-      return mockDemos;
+      return demos;
     }
-    return mockDemos.filter((demo) =>
+    return demos.filter((demo) =>
       selectedTags.some((tag) => demo.tags.includes(tag))
     );
-  }, [selectedTags]);
+  }, [selectedTags, demos]);
 
   // タグの切り替え
   const handleTagToggle = (tag: AzureService) => {
