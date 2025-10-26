@@ -1,0 +1,39 @@
+name: Delete Azure resource group
+
+on:
+  workflow_dispatch:
+
+env:
+  AZURE_RESOURCE_GROUP_NAME: ${{ vars.AZURE_RESOURCE_GROUP_NAME }}
+
+jobs:
+  delete:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate environment variables
+        run: |
+          set -euo pipefail
+          if [ -z "${AZURE_RESOURCE_GROUP_NAME:-}" ]; then
+            echo "AZURE_RESOURCE_GROUP_NAME is not set. Define it as an environment variable or repository variable." >&2
+            exit 1
+          fi
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Delete resource group if it exists
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            set -euo pipefail
+            if [ "$(az group exists --name "${AZURE_RESOURCE_GROUP_NAME}")" = "true" ]; then
+              echo "Deleting resource group '${AZURE_RESOURCE_GROUP_NAME}'."
+              az group delete \
+                --name "${AZURE_RESOURCE_GROUP_NAME}" \
+                --yes
+              echo "Resource group '${AZURE_RESOURCE_GROUP_NAME}' deleted."
+            else
+              echo "Resource group '${AZURE_RESOURCE_GROUP_NAME}' does not exist."
+            fi
+
