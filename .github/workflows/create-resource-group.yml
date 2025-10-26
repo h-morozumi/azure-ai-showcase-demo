@@ -5,12 +5,17 @@ on:
 
 env:
   AZURE_RESOURCE_GROUP_NAME: ${{ vars.AZURE_RESOURCE_GROUP_NAME }}
-  AZURE_RESOURCE_GROUP_LOCATION: ${{ vars.AZURE_RESOURCE_GROUP_LOCATION || 'japaneast' }}
+  AZURE_RESOURCE_GROUP_LOCATION: ${{ vars.AZURE_RESOURCE_GROUP_LOCATION }}
 
 jobs:
   create:
     runs-on: ubuntu-latest
     steps:
+      - name: Set default AZURE_RESOURCE_GROUP_LOCATION
+        run: |
+          if [ -z "${AZURE_RESOURCE_GROUP_LOCATION:-}" ]; then
+            echo "AZURE_RESOURCE_GROUP_LOCATION=japaneast" >> $GITHUB_ENV
+          fi
       - name: Validate environment variables
         run: |
           set -euo pipefail
