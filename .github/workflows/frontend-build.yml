@@ -1,0 +1,70 @@
+name: Build and push frontend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - 'infra/main.bicepparam'
+      - '.github/workflows/frontend-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACR_NAME: ${{ vars.ACR_NAME }}
+  ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
+  CONTAINER_IMAGE_NAME: frontend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Validate registry configuration
+        id: registry
+        env:
+          REGISTRY_NAME: ${{ env.ACR_NAME }}
+          LOGIN_SERVER: ${{ env.ACR_LOGIN_SERVER }}
+        run: |
+          if [ -z "$REGISTRY_NAME" ]; then
+            echo "::error::ACR_NAME repository variable is not set."
+            exit 1
+          fi
+
+          if [ -z "$LOGIN_SERVER" ]; then
+            LOGIN_SERVER="${REGISTRY_NAME}.azurecr.io"
+          fi
+
+          echo "name=$REGISTRY_NAME" >> "$GITHUB_OUTPUT"
+          echo "loginServer=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
+
+      - name: Azure Container Registry login
+        run: az acr login --name "${{ steps.registry.outputs.name }}"
+
+      - name: Build and push image
+        env:
+          LOGIN_SERVER: ${{ steps.registry.outputs.loginServer }}
+          IMAGE_NAME: ${{ env.CONTAINER_IMAGE_NAME }}
+        run: |
+          IMAGE_TAG="${LOGIN_SERVER}/${IMAGE_NAME}:${GITHUB_SHA}"
+          docker build -f frontend/Dockerfile -t "$IMAGE_TAG" frontend
+          docker push "$IMAGE_TAG"
+
+      - name: Publish artifact summary
+        if: success()
+        env:
+          LOGIN_SERVER: ${{ steps.registry.outputs.loginServer }}
+          IMAGE_NAME: ${{ env.CONTAINER_IMAGE_NAME }}
+        run: |
+          IMAGE_TAG="${LOGIN_SERVER}/${IMAGE_NAME}:${GITHUB_SHA}"
+          echo "Built and pushed image: $IMAGE_TAG" >> "$GITHUB_STEP_SUMMARY"

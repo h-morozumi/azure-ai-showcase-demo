@@ -1,0 +1,98 @@
+name: Deploy infrastructure
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infra-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+  variables: write
+
+env:
+  AZURE_RESOURCE_GROUP_NAME: ${{ vars.AZURE_RESOURCE_GROUP_NAME }}
+  AZURE_RESOURCE_GROUP_LOCATION: ${{ vars.AZURE_RESOURCE_GROUP_LOCATION }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Ensure resource group exists
+        env:
+          RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
+          RESOURCE_GROUP_LOCATION: ${{ env.AZURE_RESOURCE_GROUP_LOCATION }}
+        run: |
+          if [ -z "$RESOURCE_GROUP_NAME" ]; then
+            echo "::error::AZURE_RESOURCE_GROUP_NAME repository variable is not set."
+            exit 1
+          fi
+
+          if [ -z "$RESOURCE_GROUP_LOCATION" ]; then
+            echo "::error::AZURE_RESOURCE_GROUP_LOCATION repository variable is not set."
+            exit 1
+          fi
+
+          az group create \
+            --name "$RESOURCE_GROUP_NAME" \
+            --location "$RESOURCE_GROUP_LOCATION" \
+            --only-show-errors > /dev/null
+
+      - name: Deploy Bicep templates
+        id: deploy
+        env:
+          RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
+          DEPLOYMENT_NAME: iac-${{ github.run_id }}
+        run: |
+          if [ -z "$RESOURCE_GROUP_NAME" ]; then
+            echo "::error::AZURE_RESOURCE_GROUP_NAME repository variable is not set."
+            exit 1
+          fi
+
+          az deployment group create \
+            --name "$DEPLOYMENT_NAME" \
+            --resource-group "$RESOURCE_GROUP_NAME" \
+            --template-file infra/main.bicep \
+            --parameters infra/main.bicepparam \
+            --only-show-errors
+
+          REGISTRY_NAME=$(az deployment group show \
+            --name "$DEPLOYMENT_NAME" \
+            --resource-group "$RESOURCE_GROUP_NAME" \
+            --query "properties.outputs.containerRegistryName.value" -o tsv)
+
+          LOGIN_SERVER=$(az deployment group show \
+            --name "$DEPLOYMENT_NAME" \
+            --resource-group "$RESOURCE_GROUP_NAME" \
+            --query "properties.outputs.containerRegistryLoginServer.value" -o tsv)
+
+          if [ -n "$REGISTRY_NAME" ]; then
+            echo "registryName=$REGISTRY_NAME" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ -n "$LOGIN_SERVER" ]; then
+            echo "loginServer=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update repository variables
+        if: steps.deploy.outputs.registryName != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh variable set ACR_NAME --body "${{ steps.deploy.outputs.registryName }}"
+
+          if [ -n "${{ steps.deploy.outputs.loginServer }}" ]; then
+            gh variable set ACR_LOGIN_SERVER --body "${{ steps.deploy.outputs.loginServer }}"
+          fi
