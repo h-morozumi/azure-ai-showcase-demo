@@ -67,5 +67,4 @@ jobs:
           IMAGE_NAME: ${{ env.CONTAINER_IMAGE_NAME }}
         run: |
           IMAGE_TAG="${LOGIN_SERVER}/${IMAGE_NAME}:${GITHUB_SHA}"
-          echo "image=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
           echo "Built and pushed image: $IMAGE_TAG" >> "$GITHUB_STEP_SUMMARY"
