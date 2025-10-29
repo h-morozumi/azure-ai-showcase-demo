@@ -20,6 +20,10 @@ param environment = 'dev'
 // プロジェクト名のプレフィックス
 param projectPrefix = 'azai'
 
+// Azure Container Registry の名前
+// 例: 小文字英数字で 5-50 文字。
+param containerRegistryName = 'azaishowcaseacrdev'
+
 // ============================================================================
 // Azure OpenAI 設定
 // ============================================================================

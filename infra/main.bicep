@@ -29,6 +29,20 @@ param resourceSuffix string = uniqueString(resourceGroup().id)
 @description('Azure OpenAI のデプロイメントモデル名')
 param openAiDeploymentModel string = 'gpt-4'
 
+@description('Azure Container Registry のリソース名')
+param containerRegistryName string
+
+@description('Azure Container Registry の SKU')
+@allowed([
+  'Basic'
+  'Standard'
+  'Premium'
+])
+param containerRegistrySku string = 'Basic'
+
+@description('Azure Container Registry の管理者ユーザーを有効化するかどうか')
+param containerRegistryAdminUserEnabled bool = false
+
 @description('タグ情報')
 param tags object = {
   Environment: environment
@@ -46,23 +60,21 @@ var namingPrefix = '${projectPrefix}-${environment}'
 // モジュール参照
 // ============================================================================
 
-// TODO: /app モジュールの実装後に参照を追加
-// 例:
-// module aiServices './app/ai-services.bicep' = {
-//   name: 'deploy-ai-services'
-//   params: {
-//     location: location
-//     namingPrefix: namingPrefix
-//     resourceSuffix: resourceSuffix
-//     tags: tags
-//   }
-// }
+module containerRegistry './app/container-registry.bicep' = {
+  name: 'deployContainerRegistry'
+  params: {
+    name: containerRegistryName
+    location: location
+    skuName: containerRegistrySku
+    adminUserEnabled: containerRegistryAdminUserEnabled
+    tags: tags
+  }
+}
 
 // ============================================================================
 // 出力
 // ============================================================================
 
-// TODO: デプロイされたリソースの情報を出力
-// 例:
-// output aiServicesEndpoint string = aiServices.outputs.endpoint
-// output aiServicesKey string = aiServices.outputs.primaryKey
+output containerRegistryId string = containerRegistry.outputs.containerRegistryId
+output containerRegistryName string = containerRegistry.outputs.containerRegistryName
+output containerRegistryLoginServer string = containerRegistry.outputs.containerRegistryLoginServer
