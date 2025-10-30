@@ -47,7 +47,7 @@ param tags object = {}
 
 var fullImageName = '${containerRegistryLoginServer}/${containerImage}'
 var registryName = last(split(containerRegistryId, '/'))
-@description('コンテナの CPU コア数（例: 0.5, 1, 2）。小数を許容するため文字列として受け取り、json() で数値に変換します。')
+@description('コンテナの CPU コア数（例: 0.5, 1, 2）。文字列形式で指定してください。')
 param containerCpu string = '0.5'
 
 @description('コンテナのメモリサイズ（例: 1Gi, 2Gi）')
