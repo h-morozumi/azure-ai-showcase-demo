@@ -47,9 +47,11 @@ param tags object = {}
 
 var fullImageName = '${containerRegistryLoginServer}/${containerImage}'
 var registryName = last(split(containerRegistryId, '/'))
-var containerCpu = 0.5
-var containerMemory = '1Gi'
+@description('コンテナの CPU コア数（例: 0.5, 1, 2）')
+param containerCpu number = 0.5
 
+@description('コンテナのメモリサイズ（例: 1Gi, 2Gi）')
+param containerMemory string = '1Gi'
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' existing = {
   name: registryName
 }
