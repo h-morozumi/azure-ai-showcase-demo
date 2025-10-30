@@ -47,8 +47,8 @@ param tags object = {}
 
 var fullImageName = '${containerRegistryLoginServer}/${containerImage}'
 var registryName = last(split(containerRegistryId, '/'))
-@description('コンテナの CPU コア数（例: 0.5, 1, 2）')
-param containerCpu number = 0.5
+@description('コンテナの CPU コア数（例: 0.5, 1, 2）。文字列形式で指定してください。')
+param containerCpu string = '0.5'
 
 @description('コンテナのメモリサイズ（例: 1Gi, 2Gi）')
 param containerMemory string = '1Gi'
@@ -114,7 +114,7 @@ resource frontendContainerApp 'Microsoft.App/containerApps@2024-03-01' = {
           name: 'frontend'
           image: fullImageName
           resources: {
-            cpu: containerCpu
+            cpu: json(containerCpu)
             memory: containerMemory
           }
         }
@@ -129,7 +129,7 @@ resource frontendContainerApp 'Microsoft.App/containerApps@2024-03-01' = {
 }
 
 resource acrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(userAssignedIdentity.properties.principalId, containerRegistryId, 'acrpull')
+  name: guid(containerRegistryId, managedIdentityName, 'acrpull')
   scope: containerRegistry
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
