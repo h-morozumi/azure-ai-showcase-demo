@@ -88,8 +88,13 @@ jobs:
       - name: Update repository variables
         if: steps.deploy.outputs.registryName != ''
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.REPO_VARIABLES_TOKEN }}
         run: |
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::warning::Skipping repository variable update because GH_TOKEN (from secrets.REPO_VARIABLES_TOKEN) is not set."
+            exit 0
+          fi
+
           gh variable set ACR_NAME --body "${{ steps.deploy.outputs.registryName }}"
 
           if [ -n "${{ steps.deploy.outputs.loginServer }}" ]; then
