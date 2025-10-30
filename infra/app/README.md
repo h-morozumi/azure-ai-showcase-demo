@@ -17,7 +17,8 @@ app/
 ├── openai.bicep           # Azure OpenAI Service
 ├── ai-foundry.bicep       # Azure AI Foundry
 ├── storage.bicep          # アプリケーション用ストレージ構成
-└── monitoring.bicep       # アプリケーション監視構成
+├── monitoring.bicep       # アプリケーション監視構成
+└── container-app-frontend.bicep # フロントエンド用 Container Apps モジュール
 ```
 
 ## 設計ガイドライン
@@ -106,6 +107,7 @@ module openAi './app/openai.bicep' = {
 - [ ] 監視・ログ収集構成
 - [ ] ネットワーク構成（必要に応じて）
 - [ ] セキュリティ構成（Key Vault, Managed Identity）
+- [x] フロントエンド Container Apps モジュール（Container Registry イメージをデプロイ）
 
 ## 環境別設定
 
