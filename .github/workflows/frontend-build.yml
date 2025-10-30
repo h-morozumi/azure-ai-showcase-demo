@@ -57,8 +57,14 @@ jobs:
           IMAGE_NAME: ${{ env.CONTAINER_IMAGE_NAME }}
         run: |
           IMAGE_TAG="${LOGIN_SERVER}/${IMAGE_NAME}:${GITHUB_SHA}"
-          docker build -f frontend/Dockerfile -t "$IMAGE_TAG" frontend
+          LATEST_TAG="${LOGIN_SERVER}/${IMAGE_NAME}:latest"
+          docker build \
+            -f frontend/Dockerfile \
+            -t "$IMAGE_TAG" \
+            -t "$LATEST_TAG" \
+            frontend
           docker push "$IMAGE_TAG"
+          docker push "$LATEST_TAG"
 
       - name: Publish artifact summary
         if: success()
@@ -67,4 +73,8 @@ jobs:
           IMAGE_NAME: ${{ env.CONTAINER_IMAGE_NAME }}
         run: |
           IMAGE_TAG="${LOGIN_SERVER}/${IMAGE_NAME}:${GITHUB_SHA}"
-          echo "Built and pushed image: $IMAGE_TAG" >> "$GITHUB_STEP_SUMMARY"
+          LATEST_TAG="${LOGIN_SERVER}/${IMAGE_NAME}:latest"
+          {
+            echo "Built and pushed image: $IMAGE_TAG"
+            echo "Updated latest tag: $LATEST_TAG"
+          } >> "$GITHUB_STEP_SUMMARY"
