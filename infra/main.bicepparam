@@ -25,6 +25,27 @@ param projectPrefix = 'azai'
 param containerRegistryName = 'azaishowcaseacrdev'
 
 // ============================================================================
+// Container Apps 設定
+// ============================================================================
+
+// Container Apps 環境の名前
+// 例: プレフィックスと環境に基づく命名規則
+// param containerAppsEnvironmentName = 'azai-dev-cae-001'
+
+// フロントエンド Container App の名前
+// param frontendContainerAppName = 'azai-dev-ca-frontend-001'
+
+// デプロイするフロントエンド コンテナ イメージ（<repository>:<tag>）
+param frontendContainerImage = 'frontend:latest'
+
+// Container App のリッスン ポート
+param frontendContainerTargetPort = 80
+
+// 必要に応じてレプリカ数を調整
+// param frontendContainerMinReplicas = 1
+// param frontendContainerMaxReplicas = 2
+
+// ============================================================================
 // Azure OpenAI 設定
 // ============================================================================
 

@@ -43,6 +43,34 @@ param containerRegistrySku string = 'Basic'
 @description('Azure Container Registry の管理者ユーザーを有効化するかどうか')
 param containerRegistryAdminUserEnabled bool = false
 
+@description('Container Apps 環境の名前')
+param containerAppsEnvironmentName string = '${projectPrefix}-${environment}-cae-${resourceSuffix}'
+
+@description('フロントエンド Container App の名前')
+param frontendContainerAppName string = '${projectPrefix}-${environment}-ca-frontend-${resourceSuffix}'
+
+@description('フロントエンド コンテナ イメージ（<repository>:<tag> 形式）')
+param frontendContainerImage string = 'frontend:latest'
+
+@description('フロントエンド コンテナのリッスン ポート')
+@minValue(1)
+@maxValue(65535)
+param frontendContainerTargetPort int = 80
+
+@description('フロントエンド Container App の最小レプリカ数')
+@minValue(0)
+param frontendContainerMinReplicas int = 1
+
+@description('フロントエンド Container App の最大レプリカ数')
+@minValue(1)
+param frontendContainerMaxReplicas int = 1
+
+@description('フロントエンド Container App を外部公開するかどうか')
+param frontendContainerIngressExternal bool = true
+
+@description('フロントエンド Container App 用のユーザー割り当てマネージド ID の名前')
+param frontendContainerManagedIdentityName string = '${projectPrefix}-${environment}-id-frontend-${resourceSuffix}'
+
 @description('タグ情報')
 param tags object = {
   Environment: environment
@@ -71,6 +99,27 @@ module containerRegistry './app/container-registry.bicep' = {
   }
 }
 
+module frontendContainerApp './app/container-app-frontend.bicep' = {
+  name: 'deployFrontendContainerApp'
+  params: {
+    environmentName: containerAppsEnvironmentName
+    containerAppName: frontendContainerAppName
+    managedIdentityName: frontendContainerManagedIdentityName
+    location: location
+    containerImage: frontendContainerImage
+    targetPort: frontendContainerTargetPort
+    minReplicas: frontendContainerMinReplicas
+    maxReplicas: frontendContainerMaxReplicas
+    enableExternalIngress: frontendContainerIngressExternal
+    containerRegistryLoginServer: containerRegistry.outputs.containerRegistryLoginServer
+    containerRegistryId: containerRegistry.outputs.containerRegistryId
+    tags: tags
+  }
+  dependsOn: [
+    containerRegistry
+  ]
+}
+
 // ============================================================================
 // 出力
 // ============================================================================
@@ -78,3 +127,7 @@ module containerRegistry './app/container-registry.bicep' = {
 output containerRegistryId string = containerRegistry.outputs.containerRegistryId
 output containerRegistryName string = containerRegistry.outputs.containerRegistryName
 output containerRegistryLoginServer string = containerRegistry.outputs.containerRegistryLoginServer
+output containerAppsEnvironmentId string = frontendContainerApp.outputs.managedEnvironmentId
+output frontendContainerAppId string = frontendContainerApp.outputs.containerAppId
+output frontendContainerAppFqdn string = frontendContainerApp.outputs.containerAppFqdn
+output frontendContainerManagedIdentityId string = frontendContainerApp.outputs.managedIdentityId
