@@ -63,7 +63,7 @@ param frontendContainerMinReplicas int = 1
 
 @description('フロントエンド Container App の最大レプリカ数')
 @minValue(1)
-param frontendContainerMaxReplicas int = 1
+param frontendContainerMaxReplicas int = 2 // デフォルト値を 2 に設定し、スケーリングを有効化
 
 @description('フロントエンド Container App を外部公開するかどうか')
 param frontendContainerIngressExternal bool = true
