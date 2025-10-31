@@ -45,6 +45,12 @@ param frontendContainerTargetPort = 80
 // param frontendContainerMinReplicas = 1
 // param frontendContainerMaxReplicas = 2
 
+// バックエンド Container App のイメージ
+param backendContainerImage = 'azure-ai-showcase-backend:latest'
+
+// バックエンドが外部公開を行う場合は true を指定
+param backendContainerIngressExternal = true
+
 // ============================================================================
 // タグ設定
 // ============================================================================

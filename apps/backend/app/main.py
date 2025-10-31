@@ -4,8 +4,13 @@
 """
 
 from collections.abc import Mapping
+from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
+
+# アプリ起動時に .env を読み込む
+load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env", override=False)
 
 
 def create_app() -> FastAPI:

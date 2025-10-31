@@ -68,6 +68,31 @@ param frontendContainerIngressExternal bool = true
 @description('フロントエンド Container App 用のユーザー割り当てマネージド ID の名前')
 param frontendContainerManagedIdentityName string = '${projectPrefix}-${environment}-id-frontend-${resourceSuffix}'
 
+@description('バックエンド Container App の名前')
+param backendContainerAppName string = '${projectPrefix}-${environment}-ca-be-${resourceSuffix}'
+
+@description('バックエンド コンテナ イメージ（<repository>:<tag> 形式）')
+param backendContainerImage string = 'backend:latest'
+
+@description('バックエンド コンテナのリッスン ポート')
+@minValue(1)
+@maxValue(65535)
+param backendContainerTargetPort int = 8000
+
+@description('バックエンド Container App の最小レプリカ数')
+@minValue(0)
+param backendContainerMinReplicas int = 1
+
+@description('バックエンド Container App の最大レプリカ数')
+@minValue(1)
+param backendContainerMaxReplicas int = 2
+
+@description('バックエンド Container App を外部公開するかどうか')
+param backendContainerIngressExternal bool = false
+
+@description('バックエンド Container App 用のユーザー割り当てマネージド ID の名前')
+param backendContainerManagedIdentityName string = '${projectPrefix}-${environment}-id-be-${resourceSuffix}'
+
 @description('Log Analytics ワークスペース名')
 param logAnalyticsWorkspaceName string = '${projectPrefix}-${environment}-law-${resourceSuffix}'
 
@@ -155,6 +180,27 @@ module frontendContainerApp './app/container-app-frontend.bicep' = {
   }
 }
 
+module backendContainerApp './app/container-app-backend.bicep' = {
+  name: 'deployBackendContainerApp'
+  params: {
+    managedEnvironmentName: containerAppsEnvironmentName
+    containerAppName: backendContainerAppName
+    managedIdentityName: backendContainerManagedIdentityName
+    location: location
+    containerImage: backendContainerImage
+    targetPort: backendContainerTargetPort
+    minReplicas: backendContainerMinReplicas
+    maxReplicas: backendContainerMaxReplicas
+    enableExternalIngress: backendContainerIngressExternal
+    containerRegistryLoginServer: containerRegistry.outputs.containerRegistryLoginServer
+    containerRegistryId: containerRegistry.outputs.containerRegistryId
+    tags: tags
+  }
+  dependsOn: [
+    frontendContainerApp
+  ]
+}
+
 // ============================================================================
 // 出力
 // ============================================================================
@@ -167,3 +213,6 @@ output containerAppsEnvironmentId string = frontendContainerApp.outputs.managedE
 output frontendContainerAppId string = frontendContainerApp.outputs.containerAppId
 output frontendContainerAppFqdn string = frontendContainerApp.outputs.containerAppFqdn
 output frontendContainerManagedIdentityId string = frontendContainerApp.outputs.managedIdentityId
+output backendContainerAppId string = backendContainerApp.outputs.containerAppId
+output backendContainerAppFqdn string = backendContainerApp.outputs.containerAppFqdn
+output backendContainerManagedIdentityId string = backendContainerApp.outputs.managedIdentityId
