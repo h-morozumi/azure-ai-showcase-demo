@@ -33,10 +33,10 @@ param containerRegistryName = 'azaishowcaseacrdev'
 // param containerAppsEnvironmentName = 'azai-dev-cae-001'
 
 // フロントエンド Container App の名前
-// param frontendContainerAppName = 'azai-dev-ca-frontend-001'
+param frontendContainerAppName = 'azai-dev-ca-frontend-001'
 
 // デプロイするフロントエンド コンテナ イメージ（<repository>:<tag>）
-param frontendContainerImage = 'frontend:latest'
+param frontendContainerImage = 'azure-ai-showcase-frontend:latest'
 
 // Container App のリッスン ポート
 param frontendContainerTargetPort = 80
