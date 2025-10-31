@@ -13,10 +13,6 @@ using './main.bicep'
 // 環境名（dev または prod）
 param environment = 'dev'
 
-// デプロイ先のリージョン
-// 注: resourceGroup().location を使用する場合は、この行をコメントアウト
-// param location = 'japaneast'
-
 // プロジェクト名のプレフィックス
 param projectPrefix = 'azai'
 
@@ -50,6 +46,10 @@ param backendContainerImage = 'azure-ai-showcase-backend:latest'
 
 // バックエンドが外部公開を行う場合は true を指定
 param backendContainerIngressExternal = true
+
+// バックエンド Container App の名前
+param backendContainerAppName = 'azai-dev-ca-backend-001'
+
 
 // ============================================================================
 // タグ設定
