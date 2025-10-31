@@ -9,7 +9,7 @@ import type { AzureService, Demo } from '../types/demo';
  */
 export const TopPage: React.FC = () => {
   const [selectedTags, setSelectedTags] = useState<AzureService[]>([]);
-  const [demos] = useState<Demo[]>(mockDemos);
+  const demos = useMemo<Demo[]>(() => mockDemos, []);
 
   // すべてのタグを抽出（重複を除く）
   const allTags = useMemo(() => {

@@ -14,9 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Validate environment variables
+        shell: bash
         run: |
           set -euo pipefail
-          if [ -z "${AZURE_RESOURCE_GROUP_NAME:-}" ]; then
+          if [[ -z "${AZURE_RESOURCE_GROUP_NAME:-}" ]]; then
             echo "AZURE_RESOURCE_GROUP_NAME is not set. Define it as an environment variable or repository variable." >&2
             exit 1
           fi
@@ -32,14 +33,25 @@ jobs:
           azcliversion: latest
           inlineScript: |
             set -euo pipefail
-            if [ "$(az group exists --name "${AZURE_RESOURCE_GROUP_NAME}")" = "true" ]; then
+            if [[ "$(az group exists --name "${AZURE_RESOURCE_GROUP_NAME}")" == "true" ]]; then
               echo "Deleting resource group '${AZURE_RESOURCE_GROUP_NAME}'."
               az group delete \
                 --name "${AZURE_RESOURCE_GROUP_NAME}" \
-                --yes \
-                --no-wait
-              echo "Resource group '${AZURE_RESOURCE_GROUP_NAME}' deleted."
+                --yes
+              echo "Resource group '${AZURE_RESOURCE_GROUP_NAME}' deletion completed."
             else
               echo "Resource group '${AZURE_RESOURCE_GROUP_NAME}' does not exist."
             fi
+      - name: Confirm deletion
+        if: success()
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            set -euo pipefail
+            if [[ "$(az group exists --name "${AZURE_RESOURCE_GROUP_NAME}")" == "true" ]]; then
+              echo "::error::Resource group '${AZURE_RESOURCE_GROUP_NAME}' still exists after delete operation."
+              exit 1
+            fi
+            echo "Resource group '${AZURE_RESOURCE_GROUP_NAME}' confirmed deleted."
 

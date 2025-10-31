@@ -19,14 +19,11 @@ env:
 
 jobs:
   deploy:
-    permissions:
-      id-token: write
-      contents: read
-      actions: write
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
+      actions: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,16 +35,27 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Ensure jq is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y jq
+          fi
+
       - name: Ensure resource group exists
         env:
           RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
           RESOURCE_GROUP_LOCATION: ${{ env.AZURE_RESOURCE_GROUP_LOCATION }}
+        shell: bash
         run: |
-          if [ -z "$RESOURCE_GROUP_NAME" ]; then
+          set -euo pipefail
+          if [[ -z "$RESOURCE_GROUP_NAME" ]]; then
             echo "::error::AZURE_RESOURCE_GROUP_NAME repository variable is not set."
             exit 1
           fi
-          if [ -z "$RESOURCE_GROUP_LOCATION" ]; then
+          if [[ -z "$RESOURCE_GROUP_LOCATION" ]]; then
             echo "::error::AZURE_RESOURCE_GROUP_LOCATION repository variable is not set."
             exit 1
           fi
@@ -62,8 +70,10 @@ jobs:
         env:
           RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
           DEPLOYMENT_NAME: iac-${{ github.run_id }}
+        shell: bash
         run: |
-          if [ -z "$RESOURCE_GROUP_NAME" ]; then
+          set -euo pipefail
+          if [[ -z "$RESOURCE_GROUP_NAME" ]]; then
             echo "::error::AZURE_RESOURCE_GROUP_NAME repository variable is not set."
             exit 1
           fi
@@ -75,21 +85,29 @@ jobs:
             --parameters infra/main.bicepparam \
             --only-show-errors
 
-          REGISTRY_NAME=$(az deployment group show \
+          deployment_outputs=$(az deployment group show \
             --name "$DEPLOYMENT_NAME" \
             --resource-group "$RESOURCE_GROUP_NAME" \
-            --query "properties.outputs.containerRegistryName.value" -o tsv)
+            --query "properties.outputs" -o json)
 
-          LOGIN_SERVER=$(az deployment group show \
-            --name "$DEPLOYMENT_NAME" \
-            --resource-group "$RESOURCE_GROUP_NAME" \
-            --query "properties.outputs.containerRegistryLoginServer.value" -o tsv)
+          registry_name=$(jq -r '.containerRegistryName.value // empty' <<< "$deployment_outputs")
+          login_server=$(jq -r '.containerRegistryLoginServer.value // empty' <<< "$deployment_outputs")
 
-          if [ -n "$REGISTRY_NAME" ]; then
-            echo "registryName=$REGISTRY_NAME" >> "$GITHUB_OUTPUT"
+          if [[ -n "$registry_name" ]]; then
+            echo "registryName=$registry_name" >> "$GITHUB_OUTPUT"
+          fi
+          if [[ -n "$login_server" ]]; then
+            echo "loginServer=$login_server" >> "$GITHUB_OUTPUT"
           fi
 
-          if [ -n "$LOGIN_SERVER" ]; then
-            echo "loginServer=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
-          fi
+      - name: Summarize deployment
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "Deployment completed: ${{ env.AZURE_RESOURCE_GROUP_NAME }}"
+            echo "Container Registry: ${{ steps.deploy.outputs.registryName || 'N/A' }}"
+            echo "Registry Login Server: ${{ steps.deploy.outputs.loginServer || 'N/A' }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 

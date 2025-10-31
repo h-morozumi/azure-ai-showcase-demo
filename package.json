@@ -1,0 +1,13 @@
+{
+    "name": "azure-ai-showcase-demo",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "packageManager": "pnpm@9.12.0",
+    "scripts": {
+        "frontend:dev": "pnpm --filter @azure-ai-showcase/frontend dev",
+        "frontend:build": "pnpm --filter @azure-ai-showcase/frontend build",
+        "frontend:lint": "pnpm --filter @azure-ai-showcase/frontend lint",
+        "backend:dev": "uv run --project apps/backend fastapi dev apps/backend/app/main.py"
+    }
+}

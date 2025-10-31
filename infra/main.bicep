@@ -26,9 +26,6 @@ param projectPrefix string = 'azai'
 @description('リソースの一意性を保証するためのサフィックス')
 param resourceSuffix string = uniqueString(resourceGroup().id)
 
-@description('Azure OpenAI のデプロイメントモデル名')
-param openAiDeploymentModel string = 'gpt-4'
-
 @description('Azure Container Registry のリソース名')
 param containerRegistryName string
 
@@ -71,6 +68,23 @@ param frontendContainerIngressExternal bool = true
 @description('フロントエンド Container App 用のユーザー割り当てマネージド ID の名前')
 param frontendContainerManagedIdentityName string = '${projectPrefix}-${environment}-id-frontend-${resourceSuffix}'
 
+@description('Log Analytics ワークスペース名')
+param logAnalyticsWorkspaceName string = '${projectPrefix}-${environment}-law-${resourceSuffix}'
+
+@description('Log Analytics ワークスペースの SKU')
+@allowed([
+  'PerGB2018'
+  'PerNode'
+  'Standalone'
+  'CapacityReservation'
+])
+param logAnalyticsWorkspaceSku string = 'PerGB2018'
+
+@description('Log Analytics ワークスペースの保有日数')
+@minValue(30)
+@maxValue(730)
+param logAnalyticsWorkspaceRetentionInDays int = 30
+
 @description('タグ情報')
 param tags object = {
   Environment: environment
@@ -82,11 +96,33 @@ param tags object = {
 // 変数定義
 // ============================================================================
 
-var namingPrefix = '${projectPrefix}-${environment}'
-
 // ============================================================================
 // モジュール参照
 // ============================================================================
+
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
+  name: logAnalyticsWorkspaceName
+  location: location
+  properties: {
+    retentionInDays: logAnalyticsWorkspaceRetentionInDays
+    sku: {
+      name: logAnalyticsWorkspaceSku
+    }
+    features: {
+      legacy: 0
+      searchVersion: 1
+    }
+    workspaceCapping: {
+      dailyQuotaGb: -1
+    }
+    publicNetworkAccessForIngestion: 'Enabled'
+    publicNetworkAccessForQuery: 'Enabled'
+  }
+  tags: tags
+}
+
+var logAnalyticsSharedKeys = listKeys(logAnalyticsWorkspace.id, '2020-08-01')
+var logAnalyticsPrimarySharedKey = logAnalyticsSharedKeys.primarySharedKey
 
 module containerRegistry './app/container-registry.bicep' = {
   name: 'deployContainerRegistry'
@@ -113,11 +149,10 @@ module frontendContainerApp './app/container-app-frontend.bicep' = {
     enableExternalIngress: frontendContainerIngressExternal
     containerRegistryLoginServer: containerRegistry.outputs.containerRegistryLoginServer
     containerRegistryId: containerRegistry.outputs.containerRegistryId
+    logAnalyticsCustomerId: logAnalyticsWorkspace.properties.customerId
+    logAnalyticsSharedKey: logAnalyticsPrimarySharedKey
     tags: tags
   }
-  dependsOn: [
-    containerRegistry
-  ]
 }
 
 // ============================================================================
@@ -127,6 +162,7 @@ module frontendContainerApp './app/container-app-frontend.bicep' = {
 output containerRegistryId string = containerRegistry.outputs.containerRegistryId
 output containerRegistryName string = containerRegistry.outputs.containerRegistryName
 output containerRegistryLoginServer string = containerRegistry.outputs.containerRegistryLoginServer
+output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.id
 output containerAppsEnvironmentId string = frontendContainerApp.outputs.managedEnvironmentId
 output frontendContainerAppId string = frontendContainerApp.outputs.containerAppId
 output frontendContainerAppFqdn string = frontendContainerApp.outputs.containerAppFqdn

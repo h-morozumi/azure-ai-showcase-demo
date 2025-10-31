@@ -15,18 +15,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set default AZURE_RESOURCE_GROUP_LOCATION
+        shell: bash
         run: |
-          if [ -z "${AZURE_RESOURCE_GROUP_LOCATION:-}" ]; then
-            echo "AZURE_RESOURCE_GROUP_LOCATION=japaneast" >> $GITHUB_ENV
+          if [[ -z "${AZURE_RESOURCE_GROUP_LOCATION:-}" ]]; then
+            echo "AZURE_RESOURCE_GROUP_LOCATION=japaneast" >> "$GITHUB_ENV"
           fi
       - name: Validate environment variables
+        shell: bash
         run: |
           set -euo pipefail
-          if [ -z "${AZURE_RESOURCE_GROUP_NAME:-}" ]; then
+          if [[ -z "${AZURE_RESOURCE_GROUP_NAME:-}" ]]; then
             echo "AZURE_RESOURCE_GROUP_NAME is not set. Define it as an environment variable or repository variable." >&2
             exit 1
           fi
-          if [ -z "${AZURE_RESOURCE_GROUP_LOCATION:-}" ]; then
+          if [[ -z "${AZURE_RESOURCE_GROUP_LOCATION:-}" ]]; then
             echo "AZURE_RESOURCE_GROUP_LOCATION is not set. Define it as an environment variable or repository variable." >&2
             exit 1
           fi
@@ -42,7 +44,7 @@ jobs:
           azcliversion: latest
           inlineScript: |
             set -euo pipefail
-            if [ "$(az group exists --name "${AZURE_RESOURCE_GROUP_NAME}")" = "true" ]; then
+            if [[ "$(az group exists --name "${AZURE_RESOURCE_GROUP_NAME}")" == "true" ]]; then
               echo "Resource group '${AZURE_RESOURCE_GROUP_NAME}' already exists."
             else
               echo "Creating resource group '${AZURE_RESOURCE_GROUP_NAME}' in '${AZURE_RESOURCE_GROUP_LOCATION}'."

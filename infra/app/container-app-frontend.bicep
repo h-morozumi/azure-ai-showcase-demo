@@ -42,6 +42,13 @@ param containerRegistryLoginServer string
 @description('Azure Container Registry のリソース ID')
 param containerRegistryId string
 
+@description('Log Analytics ワークスペースのワークスペース ID (GUID)')
+param logAnalyticsCustomerId string
+
+@description('Log Analytics ワークスペースの共有キー')
+@secure()
+param logAnalyticsSharedKey string
+
 @description('リソースに付与するタグ')
 param tags object = {}
 
@@ -60,6 +67,13 @@ resource managedEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
   name: environmentName
   location: location
   properties: {
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: logAnalyticsCustomerId
+        sharedKey: logAnalyticsSharedKey
+      }
+    }
     workloadProfiles: [
       {
         name: 'Consumption'
@@ -70,7 +84,7 @@ resource managedEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
   tags: tags
 }
 
-resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31-preview' = {
+resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: managedIdentityName
   location: location
   tags: tags
@@ -136,9 +150,6 @@ resource acrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
     principalId: userAssignedIdentity.properties.principalId
     principalType: 'ServicePrincipal'
   }
-  dependsOn: [
-    userAssignedIdentity
-  ]
 }
 
 output managedEnvironmentId string = managedEnvironment.id
