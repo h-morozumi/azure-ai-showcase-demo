@@ -1,0 +1,132 @@
+name: Build and push backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/backend/**'
+      - 'infra/main.bicepparam'
+      - '.github/workflows/backend-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACR_NAME: ${{ vars.ACR_NAME }}
+  ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
+  CONTAINER_IMAGE_NAME: azure-ai-showcase-backend
+  AZURE_RESOURCE_GROUP_NAME: ${{ vars.AZURE_RESOURCE_GROUP_NAME }}
+  BACKEND_CONTAINER_APP_NAME: ${{ vars.BACKEND_CONTAINER_APP_NAME }}
+
+jobs:
+  build-and-push:
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate registry configuration
+        id: registry
+        env:
+          REGISTRY_NAME: ${{ env.ACR_NAME }}
+          LOGIN_SERVER: ${{ env.ACR_LOGIN_SERVER }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$REGISTRY_NAME" ]]; then
+            echo "::error::ACR_NAME repository variable is not set."
+            exit 1
+          fi
+
+          if [[ -z "$LOGIN_SERVER" ]]; then
+            LOGIN_SERVER="${REGISTRY_NAME}.azurecr.io"
+          fi
+
+          echo "name=$REGISTRY_NAME" >> "$GITHUB_OUTPUT"
+          echo "loginServer=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Azure Container Registry login
+        shell: bash
+        run: |
+          set -euo pipefail
+          az acr login --name "${{ steps.registry.outputs.name }}"
+
+      - name: Extract image metadata
+        id: meta
+        shell: bash
+        env:
+          LOGIN_SERVER: ${{ steps.registry.outputs.loginServer }}
+          IMAGE_NAME: ${{ env.CONTAINER_IMAGE_NAME }}
+        run: |
+          set -euo pipefail
+          IMAGE_TAG="${LOGIN_SERVER}/${IMAGE_NAME}:${GITHUB_SHA}"
+          LATEST_TAG="${LOGIN_SERVER}/${IMAGE_NAME}:latest"
+          echo "imageTag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "latestTag=${LATEST_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: apps/backend
+          file: apps/backend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.imageTag }}
+            ${{ steps.meta.outputs.latestTag }}
+          cache-from: type=registry,ref=${{ steps.meta.outputs.latestTag }}
+          cache-to: type=inline
+
+      - name: Ensure Container Apps extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          az extension add --name containerapp --upgrade
+
+      - name: Update backend Container App
+        env:
+          RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
+          CONTAINER_APP_NAME: ${{ env.BACKEND_CONTAINER_APP_NAME }}
+          IMAGE_TAG: ${{ steps.meta.outputs.imageTag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$RESOURCE_GROUP_NAME" ]]; then
+            echo "::error::AZURE_RESOURCE_GROUP_NAME repository variable is not set."
+            exit 1
+          fi
+
+          if [[ -z "$CONTAINER_APP_NAME" ]]; then
+            echo "::error::BACKEND_CONTAINER_APP_NAME repository variable is not set."
+            exit 1
+          fi
+
+          az containerapp update \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP_NAME" \
+            --image "$IMAGE_TAG" \
+            --only-show-errors
+
+      - name: Publish artifact summary
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "Built and pushed image: ${{ steps.meta.outputs.imageTag }}"
+            echo "Updated latest tag: ${{ steps.meta.outputs.latestTag }}"
+          } >> "$GITHUB_STEP_SUMMARY"
