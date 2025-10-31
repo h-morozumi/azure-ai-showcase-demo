@@ -9,6 +9,9 @@ env:
 jobs:
   delete:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Validate environment variables
         run: |
