@@ -9,6 +9,9 @@ env:
 
 jobs:
   create:
+    permissions:
+      id-token: write
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Set default AZURE_RESOURCE_GROUP_LOCATION

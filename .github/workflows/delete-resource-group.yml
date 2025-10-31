@@ -8,6 +8,9 @@ env:
 
 jobs:
   delete:
+    permissions:
+      id-token: write
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Validate environment variables
