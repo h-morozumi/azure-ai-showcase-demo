@@ -20,6 +20,8 @@ env:
   ACR_NAME: ${{ vars.ACR_NAME }}
   ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
   CONTAINER_IMAGE_NAME: azure-ai-showcase-frontend
+  AZURE_RESOURCE_GROUP_NAME: ${{ vars.AZURE_RESOURCE_GROUP_NAME }}
+  FRONTEND_CONTAINER_APP_NAME: ${{ vars.FRONTEND_CONTAINER_APP_NAME }}
 
 jobs:
   build-and-push:
@@ -91,6 +93,36 @@ jobs:
             ${{ steps.meta.outputs.latestTag }}
           cache-from: type=registry,ref=${{ steps.meta.outputs.latestTag }}
           cache-to: type=inline
+
+      - name: Ensure Container Apps extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          az extension add --name containerapp --upgrade
+
+      - name: Update frontend Container App
+        env:
+          RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
+          CONTAINER_APP_NAME: ${{ env.FRONTEND_CONTAINER_APP_NAME }}
+          IMAGE_TAG: ${{ steps.meta.outputs.imageTag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$RESOURCE_GROUP_NAME" ]]; then
+            echo "::error::AZURE_RESOURCE_GROUP_NAME repository variable is not set."
+            exit 1
+          fi
+
+          if [[ -z "$CONTAINER_APP_NAME" ]]; then
+            echo "::error::FRONTEND_CONTAINER_APP_NAME repository variable is not set."
+            exit 1
+          fi
+
+          az containerapp update \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP_NAME" \
+            --image "$IMAGE_TAG" \
+            --only-show-errors
 
       - name: Publish artifact summary
         if: success()
