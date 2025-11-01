@@ -45,14 +45,59 @@ export const TopPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div
+      className="relative min-h-screen overflow-hidden"
+      style={{
+        // 背景エフェクト用のカスタムプロパティ
+        // blur
+        '--background-blur-1': '120px',
+        '--background-blur-2': '160px',
+        '--background-blur-3': '140px',
+        // positioning
+        '--background-top-1': '-8rem', // -top-32
+        '--background-bottom-2': '0', // bottom-0
+        '--background-bottom-3': '-5rem', // -bottom-20
+        '--background-left-1': '50%', // left-1/2
+        '--background-right-2': '0', // right-0
+        '--background-left-3': '-10%', // left-[-10%]
+      } as React.CSSProperties}
+    >
       <div
         className="pointer-events-none absolute inset-0 opacity-80"
         aria-hidden="true"
       >
-        <div className="absolute -top-32 left-1/2 h-96 w-[40rem] -translate-x-1/2 rounded-full bg-cyan-500/30 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-80 w-[32rem] translate-x-1/4 translate-y-1/4 rounded-full bg-indigo-500/20 blur-[160px]" />
-        <div className="absolute -bottom-20 left-[-10%] h-72 w-72 rounded-full bg-fuchsia-500/20 blur-[140px]" />
+        <div
+          className="absolute rounded-full bg-cyan-500/30"
+          style={{
+            top: 'var(--background-top-1)',
+            left: 'var(--background-left-1)',
+            height: '24rem', // h-96
+            width: '40rem', // w-[40rem]
+            transform: 'translateX(-50%)',
+            filter: 'blur(var(--background-blur-1))',
+          }}
+        />
+        <div
+          className="absolute rounded-full bg-indigo-500/20"
+          style={{
+            bottom: 'var(--background-bottom-2)',
+            right: 'var(--background-right-2)',
+            height: '20rem', // h-80
+            width: '32rem', // w-[32rem]
+            transform: 'translateX(25%) translateY(25%)',
+            filter: 'blur(var(--background-blur-2))',
+          }}
+        />
+        <div
+          className="absolute rounded-full bg-fuchsia-500/20"
+          style={{
+            bottom: 'var(--background-bottom-3)',
+            left: 'var(--background-left-3)',
+            height: '18rem', // h-72
+            width: '18rem', // w-72
+            filter: 'blur(var(--background-blur-3))',
+          }}
+        />
       </div>
 
       {/* ヒーローセクション */}
