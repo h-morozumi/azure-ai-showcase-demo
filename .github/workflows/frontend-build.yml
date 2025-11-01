@@ -6,10 +6,6 @@ on:
       - main
     paths:
       - 'apps/frontend/**'
-      - 'pnpm-workspace.yaml'
-      - 'pnpm-lock.yaml'
-      - 'package.json'
-      - 'infra/main.bicepparam'
       - '.github/workflows/frontend-build.yml'
   workflow_dispatch:
 

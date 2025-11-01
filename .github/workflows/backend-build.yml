@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - 'apps/backend/**'
-      - 'infra/main.bicepparam'
       - '.github/workflows/backend-build.yml'
   workflow_dispatch:
 
