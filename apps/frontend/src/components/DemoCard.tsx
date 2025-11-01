@@ -22,7 +22,7 @@ export const DemoCard: React.FC<DemoCardProps> = ({ demo }) => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/10 to-transparent opacity-0 transition duration-500 group-hover:opacity-100" aria-hidden="true" />
         <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-6 pb-5 text-xs uppercase tracking-[0.3em] text-slate-200 opacity-0 transition duration-500 group-hover:opacity-100">
-          <span className="text-cyan-200">{demo.tags[0]}</span>
+          <span className="text-cyan-200">{demo.tags?.[0] ?? 'No Tag'}</span>
           <span aria-hidden="true">Explore →</span>
         </div>
       </div>
