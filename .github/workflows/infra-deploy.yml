@@ -44,6 +44,18 @@ jobs:
             sudo apt-get install -y jq
           fi
 
+      - name: Resolve repository variables
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          BACKEND_URL=$(gh variable get BACKEND_URL --repo "$GITHUB_REPOSITORY" --json value --jq '.value' 2>/dev/null || true)
+
+          if [[ -n "$BACKEND_URL" ]]; then
+            echo "BACKEND_URL=$BACKEND_URL" >> "$GITHUB_ENV"
+          fi
+
       - name: Ensure resource group exists
         env:
           RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
@@ -92,6 +104,7 @@ jobs:
 
           registry_name=$(jq -r '.containerRegistryName.value // empty' <<< "$deployment_outputs")
           login_server=$(jq -r '.containerRegistryLoginServer.value // empty' <<< "$deployment_outputs")
+          frontend_app_id=$(jq -r '.frontendContainerAppId.value // empty' <<< "$deployment_outputs")
 
           if [[ -n "$registry_name" ]]; then
             echo "registryName=$registry_name" >> "$GITHUB_OUTPUT"
@@ -99,6 +112,43 @@ jobs:
           if [[ -n "$login_server" ]]; then
             echo "loginServer=$login_server" >> "$GITHUB_OUTPUT"
           fi
+          if [[ -n "$frontend_app_id" ]]; then
+            echo "frontendAppId=$frontend_app_id" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Ensure Container Apps extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          az extension add --name containerapp --upgrade
+
+      - name: Configure frontend API URL secret
+        env:
+          CONTAINER_APP_ID: ${{ steps.deploy.outputs.frontendAppId }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          BACKEND_URL="${BACKEND_URL:-}"
+
+          if [[ -z "$CONTAINER_APP_ID" ]]; then
+            echo "::error::Failed to resolve frontend Container App resource ID from deployment outputs."
+            exit 1
+          fi
+
+          if [[ -z "$BACKEND_URL" ]]; then
+            echo "::error::BACKEND_URL repository variable is not set."
+            exit 1
+          fi
+
+          az containerapp secret set \
+            --ids "$CONTAINER_APP_ID" \
+            --secrets vite-api-url="$BACKEND_URL" \
+            --only-show-errors
+
+          az containerapp update \
+            --ids "$CONTAINER_APP_ID" \
+            --set-env-vars VITE_API_URL=secretref:vite-api-url \
+            --only-show-errors
 
       - name: Summarize deployment
         if: success()

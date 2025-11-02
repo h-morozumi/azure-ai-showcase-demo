@@ -36,6 +36,18 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Resolve repository variables
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          BACKEND_URL=$(gh variable get BACKEND_URL --repo "$GITHUB_REPOSITORY" --json value --jq '.value' 2>/dev/null || true)
+
+          if [[ -n "$BACKEND_URL" ]]; then
+            echo "BACKEND_URL=$BACKEND_URL" >> "$GITHUB_ENV"
+          fi
+
       - name: Validate registry configuration
         id: registry
         env:
@@ -96,6 +108,26 @@ jobs:
           set -euo pipefail
           az extension add --name containerapp --upgrade
 
+      - name: Configure frontend API URL secret
+        env:
+          RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
+          CONTAINER_APP_NAME: ${{ env.FRONTEND_CONTAINER_APP_NAME }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          BACKEND_URL="${BACKEND_URL:-}"
+
+          if [[ -z "$BACKEND_URL" ]]; then
+            echo "::error::BACKEND_URL repository variable is not set."
+            exit 1
+          fi
+
+          az containerapp secret set \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP_NAME" \
+            --secrets vite-api-url="$BACKEND_URL" \
+            --only-show-errors
+
       - name: Update frontend Container App
         env:
           RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
@@ -118,6 +150,7 @@ jobs:
             --name "$CONTAINER_APP_NAME" \
             --resource-group "$RESOURCE_GROUP_NAME" \
             --image "$IMAGE_TAG" \
+            --set-env-vars VITE_API_URL=secretref:vite-api-url \
             --only-show-errors
 
       - name: Publish artifact summary
