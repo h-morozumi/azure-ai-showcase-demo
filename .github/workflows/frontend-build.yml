@@ -36,18 +36,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Resolve repository variables
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          BACKEND_URL=$(gh variable get BACKEND_URL --repo "$GITHUB_REPOSITORY" --json value --jq '.value' 2>/dev/null || true)
-
-          if [[ -n "$BACKEND_URL" ]]; then
-            echo "BACKEND_URL=$BACKEND_URL" >> "$GITHUB_ENV"
-          fi
-
       - name: Validate registry configuration
         id: registry
         env:
@@ -112,10 +100,10 @@ jobs:
         env:
           RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
           CONTAINER_APP_NAME: ${{ env.FRONTEND_CONTAINER_APP_NAME }}
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
         shell: bash
         run: |
           set -euo pipefail
-          BACKEND_URL="${BACKEND_URL:-}"
 
           if [[ -z "$BACKEND_URL" ]]; then
             echo "::error::BACKEND_URL repository variable is not set."

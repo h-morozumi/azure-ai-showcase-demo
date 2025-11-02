@@ -44,18 +44,6 @@ jobs:
             sudo apt-get install -y jq
           fi
 
-      - name: Resolve repository variables
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          BACKEND_URL=$(gh variable get BACKEND_URL --repo "$GITHUB_REPOSITORY" --json value --jq '.value' 2>/dev/null || true)
-
-          if [[ -n "$BACKEND_URL" ]]; then
-            echo "BACKEND_URL=$BACKEND_URL" >> "$GITHUB_ENV"
-          fi
-
       - name: Ensure resource group exists
         env:
           RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
@@ -125,11 +113,10 @@ jobs:
       - name: Configure frontend API URL secret
         env:
           CONTAINER_APP_ID: ${{ steps.deploy.outputs.frontendAppId }}
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
         shell: bash
         run: |
           set -euo pipefail
-          BACKEND_URL="${BACKEND_URL:-}"
-
           if [[ -z "$CONTAINER_APP_ID" ]]; then
             echo "::error::Failed to resolve frontend Container App resource ID from deployment outputs."
             exit 1
