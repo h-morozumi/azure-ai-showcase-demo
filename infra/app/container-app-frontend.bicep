@@ -131,6 +131,12 @@ resource frontendContainerApp 'Microsoft.App/containerApps@2024-03-01' = {
             cpu: json(containerCpu)
             memory: containerMemory
           }
+          env: [
+            {
+              name: 'VITE_API_URL'
+              value: 'http://localhost:8000'
+            }
+          ]
         }
       ]
       scale: {

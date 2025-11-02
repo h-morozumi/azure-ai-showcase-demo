@@ -109,6 +109,40 @@ resource backendContainerApp 'Microsoft.App/containerApps@2024-03-01' = {
             cpu: json(containerCpu)
             memory: containerMemory
           }
+          env: [
+            {
+              name: 'AZURE_OPENAI_ENDPOINT'
+              value: ''
+            }
+            {
+              name: 'AZURE_OPENAI_API_KEY'
+              value: ''
+            }
+            {
+              name: 'AZURE_OPENAI_DEPLOYMENT'
+              value: ''
+            }
+            {
+              name: 'AZURE_SPEECH_KEY'
+              value: ''
+            }
+            {
+              name: 'AZURE_SPEECH_REGION'
+              value: ''
+            }
+            {
+              name: 'AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT'
+              value: ''
+            }
+            {
+              name: 'AZURE_DOCUMENT_INTELLIGENCE_KEY'
+              value: ''
+            }
+            {
+              name: 'APP_LOG_LEVEL'
+              value: 'info'
+            }
+          ]
         }
       ]
       scale: {
