@@ -9,8 +9,16 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libportaudio2 \
+    && rm -rf /var/lib/apt/lists/*
+
 # 依存関係インストール用のビルドステージ
 FROM base AS builder
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential portaudio19-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # uv をインストールし、ロックファイルに基づいて依存関係を解決
 RUN pip install --no-cache-dir uv
