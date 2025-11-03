@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { Demo } from '../types/demo';
 
 interface DemoCardProps {
@@ -9,8 +10,8 @@ interface DemoCardProps {
  */
 export const DemoCard: React.FC<DemoCardProps> = ({ demo }) => {
   return (
-    <a
-      href={demo.path}
+    <Link
+      to={demo.path}
       className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-lg shadow-cyan-500/10 transition-all duration-300 hover:-translate-y-1 hover:border-cyan-300/60 hover:shadow-2xl hover:shadow-cyan-500/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/70"
       aria-label={`${demo.title} の詳細へ移動`}
     >
@@ -44,6 +45,6 @@ export const DemoCard: React.FC<DemoCardProps> = ({ demo }) => {
           ))}
         </div>
       </div>
-    </a>
+    </Link>
   );
 };

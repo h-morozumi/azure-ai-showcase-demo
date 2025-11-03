@@ -5,6 +5,14 @@ import type { Demo } from '../types/demo';
  */
 export const mockDemos: Demo[] = [
   {
+    id: 'speech-avatar-live',
+    title: 'リアルタイムアバター会話デモ',
+    description: 'Voice Live API とテキスト読み上げアバターでリアルタイム会話体験を提供します。',
+    image: 'https://via.placeholder.com/400x250/1E90FF/FFFFFF?text=Speech+Avatar+Demo',
+    tags: ['Speech Service', 'Avator', 'OpenAI'],
+    path: '/speech-avatar-demo',
+  },
+  {
     id: 'speech-to-text',
     title: '音声認識 (Speech to Text)',
     description: 'Azure Speech Service を使用してリアルタイムで音声をテキストに変換します。',

@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { DemoCard } from '../components/DemoCard';
 import { DemoFilter } from '../components/DemoFilter';
 import { mockDemos } from '../utils/mockData';
@@ -10,6 +11,57 @@ import type { AzureService, Demo } from '../types/demo';
 export const TopPage: React.FC = () => {
   const [selectedTags, setSelectedTags] = useState<AzureService[]>([]);
   const demos = useMemo<Demo[]>(() => mockDemos, []);
+  const location = useLocation();
+  const mainSectionRef = useRef<HTMLElement | null>(null);
+  const scrollHandledRef = useRef<string | number | null>(null);
+
+  const handleScrollToDemos = useCallback(() => {
+    if (!mainSectionRef.current) {
+      return;
+    }
+    const top = mainSectionRef.current.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top, behavior: 'smooth' });
+  }, []);
+
+  // ブラウザの自動スクロール復元を無効化して、ページ遷移時の位置を制御する
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      const original = window.history.scrollRestoration;
+      window.history.scrollRestoration = 'manual';
+      return () => {
+        window.history.scrollRestoration = original;
+      };
+    }
+    return undefined;
+  }, []);
+
+  // #demos への遷移やデモ詳細からの戻り操作でスクロール位置を統一
+  useLayoutEffect(() => {
+    const hasHash = location.hash === '#demos';
+    const state = (location.state as { scrollTo?: string; scrollTrigger?: number } | null) ?? null;
+    const fromState = state?.scrollTo === 'demos';
+
+    if (!hasHash && !fromState) {
+      scrollHandledRef.current = null;
+      return;
+    }
+
+    if (!mainSectionRef.current) {
+      return;
+    }
+
+    const triggerKey = fromState
+      ? state?.scrollTrigger ?? null
+      : `${location.pathname}${location.hash}`;
+
+    if (scrollHandledRef.current === triggerKey) {
+      return;
+    }
+
+    scrollHandledRef.current = triggerKey;
+    const top = mainSectionRef.current.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top, behavior: fromState ? 'smooth' : 'auto' });
+  }, [location.hash, location.pathname, location.state]);
 
   // すべてのタグを抽出（重複を除く）
   const allTags = useMemo(() => {
@@ -117,13 +169,14 @@ export const TopPage: React.FC = () => {
               Azure AI Service と AI Foundry の最新デモを、洗練されたビジュアルで探索しましょう。ユースケースやサービス別にフィルタリングし、求めているソリューションを素早く発見できます。
             </p>
             <div className="flex flex-wrap items-center gap-4">
-              <a
-                href="#demos"
+              <button
+                type="button"
+                onClick={handleScrollToDemos}
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition hover:shadow-xl hover:shadow-cyan-500/40"
               >
                 デモ一覧へ進む
                 <span aria-hidden="true">→</span>
-              </a>
+              </button>
               <span className="text-sm text-slate-400">
                 {demos.length} 件のデモが登録されています
               </span>
@@ -159,6 +212,7 @@ export const TopPage: React.FC = () => {
       {/* メインコンテンツ */}
       <main
         id="demos"
+        ref={mainSectionRef}
         className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-20 pt-12 sm:px-8 lg:px-12"
       >
         {/* フィルター */}

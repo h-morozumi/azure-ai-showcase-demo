@@ -5,7 +5,9 @@ export type AzureService =
   | 'Speech Service'
   | 'Document Intelligence'
   | 'AI Foundry'
-  | 'OpenAI Service';
+  | 'OpenAI Service'
+  | 'OpenAI'
+  | 'Avator';
 
 /**
  * デモの情報を定義する型
