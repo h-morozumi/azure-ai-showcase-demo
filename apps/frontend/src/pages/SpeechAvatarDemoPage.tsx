@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { RealtimeConfigurator } from '../components/RealtimeConfigurator';
 
 export const SpeechAvatarDemoPage: React.FC = () => {
   const navigate = useNavigate();
@@ -122,7 +123,9 @@ export const SpeechAvatarDemoPage: React.FC = () => {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-dashed border-cyan-400/40 bg-cyan-400/5 p-8 text-slate-100">
+  <RealtimeConfigurator />
+
+  <section className="rounded-3xl border border-dashed border-cyan-400/40 bg-cyan-400/5 p-8 text-slate-100">
           <h2 className="text-2xl font-semibold text-white sm:text-3xl">次のステップ</h2>
           <ul className="mt-6 space-y-3 text-sm text-slate-200">
             <li>• 音声入力・応答を可視化するダッシュボードを追加</li>
