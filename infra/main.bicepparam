@@ -38,8 +38,8 @@ param frontendContainerImage = 'azure-ai-showcase-frontend:latest'
 param frontendContainerTargetPort = 80
 
 // 必要に応じてレプリカ数を調整
-// param frontendContainerMinReplicas = 1
-// param frontendContainerMaxReplicas = 2
+param frontendContainerMinReplicas = 0
+param backendContainerMinReplicas = 0
 
 // バックエンド Container App のイメージ
 param backendContainerImage = 'azure-ai-showcase-backend:latest'
