@@ -101,12 +101,28 @@ const request = async <T>(path: string): Promise<T> => {
     headers: buildHeaders(),
   });
 
+  const contentType = response.headers.get('content-type') ?? '';
+  const responseBody = await response.text();
+
   if (!response.ok) {
-    const detail = await response.text();
+    const detail = responseBody.trim();
     throw new Error(`Request failed (${response.status}): ${detail || response.statusText}`);
   }
 
-  return (await response.json()) as T;
+  if (!contentType.toLowerCase().includes('application/json')) {
+    const snippet = responseBody.slice(0, 200).replace(/\s+/g, ' ').trim();
+    throw new Error(
+      `Unexpected response format (${contentType || 'unknown content-type'}). Body preview: ${snippet || '[empty]'}`,
+    );
+  }
+
+  try {
+    return JSON.parse(responseBody) as T;
+  } catch (error) {
+    const snippet = responseBody.slice(0, 200).replace(/\s+/g, ' ').trim();
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to parse JSON response (${reason}). Body preview: ${snippet || '[empty]'}`);
+  }
 };
 
 export const fetchRealtimeModels = async (): Promise<RealtimeModelsApiResponse> =>
