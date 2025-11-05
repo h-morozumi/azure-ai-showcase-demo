@@ -8,8 +8,31 @@ from fastapi import APIRouter, Depends
 
 from app.api.deps import get_app_settings, verify_api_key
 from app.config.realtime_models import RealtimeModel, get_model, list_models
+from app.config.avatar_options import list_avatars
+from app.config.language_options import (
+    list_azure_speech_language_modes,
+    list_azure_speech_languages,
+    list_gpt_realtime_languages,
+    list_phi4_mm_languages,
+)
+from app.config.voice_options import (
+    get_default_azure_voice_id,
+    list_azure_voices,
+)
 from app.core.config import Settings
-from app.schemas.realtime import RealtimeModelsResponse, RealtimeModelSchema
+from app.schemas.realtime import (
+    AvatarOptionSchema,
+    AzureSpeechLanguagesResponse,
+    LanguageModeSchema,
+    LanguageOptionSchema,
+    LanguageOptionsResponse,
+    ModelLanguageSupportSchema,
+    AvatarOptionsResponse,
+    RealtimeModelsResponse,
+    RealtimeModelSchema,
+    VoiceOptionSchema,
+    VoiceOptionsResponse,
+)
 
 router = APIRouter(
     prefix="/api/v1/realtime",
@@ -56,7 +79,86 @@ async def list_realtime_models(settings: Settings = Depends(get_app_settings)) -
     return RealtimeModelsResponse(
         default_model_id=settings.voice_live_deployment_id,
         allowed_model_ids=allowed_model_ids,
-        default_avatar_character=settings.avatar_default_character,
         voice_live_agent_id=settings.voice_live_agent_id,
         models=payload,
     )
+
+
+@router.get(
+    "/voices/azure",
+    response_model=VoiceOptionsResponse,
+    summary="Azure ボイス一覧を取得",
+)
+async def list_azure_voice_options() -> VoiceOptionsResponse:
+    """Azure ボイスのメタデータを返す。"""
+
+    voices = [VoiceOptionSchema.from_dataclass(voice) for voice in list_azure_voices()]
+    default_voice_id = get_default_azure_voice_id() if voices else ""
+
+    return VoiceOptionsResponse(provider="azure", default_voice_id=default_voice_id, voices=voices)
+
+
+@router.get(
+    "/avatars",
+    response_model=AvatarOptionsResponse,
+    summary="アバターキャラクター一覧を取得",
+)
+async def list_avatar_options(settings: Settings = Depends(get_app_settings)) -> AvatarOptionsResponse:
+    """アバターのメタデータを返す。"""
+
+    avatars = [AvatarOptionSchema.from_dataclass(avatar) for avatar in list_avatars()]
+    default_avatar_id = settings.avatar_default_character or (avatars[0].avatar_id if avatars else "")
+
+    if avatars and default_avatar_id not in {avatar.avatar_id for avatar in avatars}:
+        default_avatar_id = avatars[0].avatar_id
+
+    return AvatarOptionsResponse(default_avatar_id=default_avatar_id, avatars=avatars)
+
+
+_REALTIME_LANGUAGE_MODEL_MAPPING = {
+    "gpt-realtime": list_gpt_realtime_languages,
+    "gpt-realtime-mini": list_gpt_realtime_languages,
+    "phi4-mm-realtime": list_phi4_mm_languages,
+}
+
+_MULTIMODAL_LANGUAGE_MODELS = [
+    "gpt-4o",
+    "gpt-4o-mini",
+    "gpt-4.1",
+    "gpt-4.1-mini",
+    "gpt-5",
+    "gpt-5-mini",
+    "gpt-5-nano",
+    "gpt-5-chat",
+    "phi4-mini",
+]
+
+
+@router.get(
+    "/languages",
+    response_model=LanguageOptionsResponse,
+    summary="入力音声の言語オプションを取得",
+)
+async def list_language_options() -> LanguageOptionsResponse:
+    """Realtime モデルおよび Azure Speech の言語設定オプションを返却する。"""
+
+    azure_modes = [LanguageModeSchema.from_dataclass(mode) for mode in list_azure_speech_language_modes()]
+    azure_languages = [LanguageOptionSchema.from_dataclass(option) for option in list_azure_speech_languages()]
+
+    realtime_model_entries: list[ModelLanguageSupportSchema] = []
+
+    for model_id, provider_fn in _REALTIME_LANGUAGE_MODEL_MAPPING.items():
+        languages = [LanguageOptionSchema.from_dataclass(option) for option in provider_fn()]
+        realtime_model_entries.append(
+            ModelLanguageSupportSchema(model_id=model_id, languages=languages),
+        )
+
+    multimodal_languages = [LanguageOptionSchema.from_dataclass(option) for option in list_azure_speech_languages() if option.code]
+    for model_id in _MULTIMODAL_LANGUAGE_MODELS:
+        realtime_model_entries.append(
+            ModelLanguageSupportSchema(model_id=model_id, languages=multimodal_languages),
+        )
+
+    azure_response = AzureSpeechLanguagesResponse(modes=azure_modes, languages=azure_languages)
+
+    return LanguageOptionsResponse(azure_speech=azure_response, realtime_models=realtime_model_entries)

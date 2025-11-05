@@ -61,7 +61,7 @@ def get_settings() -> Settings:
         speech_key=_to_optional(os.getenv("AZURE_SPEECH_KEY")),
         voice_live_deployment_id=os.getenv("AZURE_VOICE_LIVE_DEPLOYMENT_ID", "gpt-realtime"),
         voice_live_agent_id=_to_optional(os.getenv("AZURE_VOICE_LIVE_AGENT_ID")),
-        avatar_default_character=os.getenv("AZURE_AVATAR_DEFAULT_CHARACTER", "ava-hd"),
+        avatar_default_character=os.getenv("AZURE_AVATAR_DEFAULT_CHARACTER", "lisa-casual-sitting"),
         openai_endpoint=_to_optional(os.getenv("AZURE_OPENAI_ENDPOINT")),
         openai_api_key=_to_optional(os.getenv("AZURE_OPENAI_API_KEY")),
         openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-06-01"),

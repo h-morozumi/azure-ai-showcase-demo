@@ -7,7 +7,10 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.config.avatar_options import AvatarOption
 from app.config.realtime_models import RealtimeModel
+from app.config.voice_options import VoiceOption
+from app.config.language_options import LanguageMode, LanguageOption
 
 
 class RealtimeModelSchema(BaseModel):
@@ -29,11 +32,120 @@ class RealtimeModelSchema(BaseModel):
         return cls(**asdict(model))
 
 
+class VoiceOptionSchema(BaseModel):
+    """ボイスのメタデータスキーマ。"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    voice_id: str = Field(..., description="ボイス ID")
+    provider: str = Field(..., description="ボイス提供元")
+    display_name: str = Field(..., description="表示名")
+    locale: str = Field(..., description="ロケール")
+    description: str = Field(..., description="説明")
+    tags: Optional[List[str]] = Field(default=None, description="タグ")
+
+    @classmethod
+    def from_dataclass(cls, voice: VoiceOption) -> "VoiceOptionSchema":
+        """VoiceOption dataclass からスキーマを生成する。"""
+
+        return cls(**asdict(voice))
+
+
+class AvatarOptionSchema(BaseModel):
+    """アバターキャラクタースキーマ。"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    avatar_id: str = Field(..., description="アバター ID")
+    provider: str = Field(..., description="提供元")
+    display_name: str = Field(..., description="表示名")
+    character: str = Field(..., description="Voice Live で利用するキャラクター ID")
+    description: str = Field(..., description="説明")
+    style: Optional[str] = Field(default=None, description="スタイル分類")
+    recommended_use: Optional[str] = Field(default=None, description="推奨用途")
+    tags: Optional[List[str]] = Field(default=None, description="タグ")
+    thumbnail_url: Optional[str] = Field(default=None, description="サムネイル画像 URL")
+
+    @classmethod
+    def from_dataclass(cls, avatar: AvatarOption) -> "AvatarOptionSchema":
+        """AvatarOption dataclass からスキーマを生成する。"""
+
+        return cls(**asdict(avatar))
+
+
+class LanguageOptionSchema(BaseModel):
+    """言語選択肢のスキーマ。"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    code: str = Field(..., description="BCP-47 もしくは ISO 言語コード。Azure の自動検出時は空文字。")
+    label: str = Field(..., description="表示名")
+    note: Optional[str] = Field(default=None, description="補足情報")
+
+    @classmethod
+    def from_dataclass(cls, option: LanguageOption) -> "LanguageOptionSchema":
+        """LanguageOption dataclass からスキーマを生成する。"""
+
+        return cls(**asdict(option))
+
+
+class LanguageModeSchema(BaseModel):
+    """言語構成モードのスキーマ。"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    mode: str = Field(..., description="モード識別子")
+    label: str = Field(..., description="表示ラベル")
+    description: str = Field(..., description="説明")
+
+    @classmethod
+    def from_dataclass(cls, mode: LanguageMode) -> "LanguageModeSchema":
+        """LanguageMode dataclass からスキーマを生成する。"""
+
+        return cls(**asdict(mode))
+
+
 class RealtimeModelsResponse(BaseModel):
     """Live Voice モデル一覧 API のレスポンス。"""
 
     default_model_id: str = Field(..., description="初期選択に使うモデル ID")
     allowed_model_ids: List[str] = Field(..., description="利用を許可しているモデル ID 一覧")
-    default_avatar_character: str = Field(..., description="デフォルトのアバターキャラクター ID")
     voice_live_agent_id: Optional[str] = Field(default=None, description="Agent 利用時に参照する ID")
     models: List[RealtimeModelSchema] = Field(..., description="提供するモデルのメタデータ")
+
+
+class VoiceOptionsResponse(BaseModel):
+    """ボイス一覧レスポンス。"""
+
+    provider: str = Field(..., description="ボイス提供元")
+    default_voice_id: str = Field(..., description="既定ボイス ID")
+    voices: List[VoiceOptionSchema] = Field(..., description="ボイスメタデータ一覧")
+
+
+class AvatarOptionsResponse(BaseModel):
+    """アバター一覧レスポンス。"""
+
+    default_avatar_id: str = Field(..., description="既定のアバター ID")
+    avatars: List[AvatarOptionSchema] = Field(..., description="アバターメタデータ一覧")
+
+
+class AzureSpeechLanguagesResponse(BaseModel):
+    """Azure Speech 言語構成レスポンス。"""
+
+    provider: str = Field(default="azure-speech", description="プロバイダー識別子")
+    modes: List[LanguageModeSchema] = Field(..., description="構成モードの一覧")
+    languages: List[LanguageOptionSchema] = Field(..., description="利用可能な言語リスト")
+
+
+class ModelLanguageSupportSchema(BaseModel):
+    """Realtime モデル固有の言語サポート情報。"""
+
+    model_id: str = Field(..., description="対象モデル ID")
+    languages: List[LanguageOptionSchema] = Field(..., description="選択可能な言語")
+
+
+class LanguageOptionsResponse(BaseModel):
+    """言語選択肢をまとめたレスポンス。"""
+
+    azure_speech: AzureSpeechLanguagesResponse = Field(..., description="Azure Speech 入力音声設定")
+    realtime_models: List[ModelLanguageSupportSchema] = Field(..., description="Realtime モデル個別の言語サポート")

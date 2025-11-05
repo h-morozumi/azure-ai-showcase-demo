@@ -1,8 +1,6 @@
 export type ModelCategory = 'realtime' | 'standard' | 'agent';
 
-export type VoiceTab = 'openai' | 'azure';
-
-export type VoiceProvider = 'openai' | 'azure';
+export type VoiceProvider = 'azure';
 
 export interface CapabilityFlag {
   enabled: boolean;
@@ -18,11 +16,6 @@ export interface RealtimeCapabilityFlags {
   azureLanguage: CapabilityFlag;
 }
 
-export interface VoiceBehavior {
-  defaultTab: VoiceTab;
-  showAzureWarning: boolean;
-}
-
 interface RawCapabilities {
   supportsEOU: boolean;
   supportsPhraseList: boolean;
@@ -30,7 +23,6 @@ interface RawCapabilities {
   supportsInstructions: boolean;
   supportsCustomSpeech: boolean;
   supportsAzureLanguage: boolean;
-  voiceDefaultTab: VoiceTab;
   azureVoiceWarning: boolean;
 }
 

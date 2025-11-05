@@ -1,40 +1,5 @@
 import type { VoiceCharacterOption } from '../types/realtimeAvatar';
 
-export const OPENAI_VOICE_OPTIONS: VoiceCharacterOption[] = [
-  {
-    id: 'verse',
-    provider: 'openai',
-    displayName: 'Verse',
-    locale: 'en-US',
-    description: '軽快でニュートラルなトーン。リアルタイム会話に向いたバランス型。',
-    tags: ['Default', 'Conversational'],
-  },
-  {
-    id: 'aria',
-    provider: 'openai',
-    displayName: 'Aria',
-    locale: 'en-GB',
-    description: '明るく親しみやすい女性ボイス。案内役やコンシェルジュに最適。',
-    tags: ['Friendly'],
-  },
-  {
-    id: 'alloy',
-    provider: 'openai',
-    displayName: 'Alloy',
-    locale: 'en-US',
-    description: '落ち着いた男性ボイス。トラブルシュートや司会進行向け。',
-    tags: ['Calm'],
-  },
-  {
-    id: 'coral',
-    provider: 'openai',
-    displayName: 'Coral',
-    locale: 'en-US',
-    description: '感情表現が豊かなドラマチックボイス。プレゼンテーションに活用。',
-    tags: ['Expressive'],
-  },
-];
-
 export const AZURE_VOICE_OPTIONS: VoiceCharacterOption[] = [
   {
     id: 'ja-JP-AoiNeural',
@@ -70,11 +35,7 @@ export const AZURE_VOICE_OPTIONS: VoiceCharacterOption[] = [
   },
 ];
 
-export const DEFAULT_OPENAI_VOICE_ID = OPENAI_VOICE_OPTIONS[0]?.id ?? '';
 export const DEFAULT_AZURE_VOICE_ID = AZURE_VOICE_OPTIONS[0]?.id ?? '';
-
-export const getOpenAIVoiceById = (voiceId: string): VoiceCharacterOption | undefined =>
-  OPENAI_VOICE_OPTIONS.find((voice) => voice.id === voiceId);
 
 export const getAzureVoiceById = (voiceId: string): VoiceCharacterOption | undefined =>
   AZURE_VOICE_OPTIONS.find((voice) => voice.id === voiceId);

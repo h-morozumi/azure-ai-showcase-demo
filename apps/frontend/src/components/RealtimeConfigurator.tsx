@@ -1,16 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRealtimeCapabilities } from '../hooks/useRealtimeCapabilities';
-import type { ModelCategory, VoiceTab } from '../types/realtimeAvatar';
+import type { ModelCategory } from '../types/realtimeAvatar';
 import { MODEL_CATEGORY_LABELS, MODEL_GROUPS, MODEL_CONFIGS, DEFAULT_MODEL_ID } from '../utils/realtimeModelConfigs';
 import type { ModelMetadata } from '../types/realtimeAvatar';
-import {
-  OPENAI_VOICE_OPTIONS,
-  AZURE_VOICE_OPTIONS,
-  DEFAULT_OPENAI_VOICE_ID,
-  DEFAULT_AZURE_VOICE_ID,
-  getOpenAIVoiceById,
-  getAzureVoiceById,
-} from '../utils/voiceOptions';
+import { AZURE_VOICE_OPTIONS, DEFAULT_AZURE_VOICE_ID, getAzureVoiceById } from '../utils/voiceOptions';
 import { AVATAR_OPTIONS, DEFAULT_AVATAR_ID, getAvatarById } from '../utils/avatarOptions';
 
 type SemanticVadMode = 'azure_semantic_vad' | 'semantic_vad';
@@ -28,11 +21,9 @@ interface FormState {
   phraseList: string;
   enableEou: boolean;
   semanticVad: SemanticVadMode;
-  voiceTab: VoiceTab;
   language: string;
   customSpeechEndpoint: string;
   agentId: string;
-  openaiVoiceId: string;
   azureVoiceId: string;
   avatarId: string;
 }
@@ -41,18 +32,16 @@ const initialModel: ModelMetadata = MODEL_CONFIGS.find((model) => model.id === D
 
 export const RealtimeConfigurator = () => {
   const [selectedModelId, setSelectedModelId] = useState<string>(initialModel.id);
-  const { model, capabilityFlags, voiceBehavior, requiresAgentId } = useRealtimeCapabilities(selectedModelId);
+  const { model, capabilityFlags, requiresAgentId } = useRealtimeCapabilities(selectedModelId);
 
   const [formState, setFormState] = useState<FormState>(() => ({
     instructions: '',
     phraseList: '',
     enableEou: false,
     semanticVad: 'azure_semantic_vad',
-    voiceTab: initialModel.rawCapabilities.voiceDefaultTab,
     language: 'ja-JP',
     customSpeechEndpoint: '',
     agentId: '',
-    openaiVoiceId: DEFAULT_OPENAI_VOICE_ID,
     azureVoiceId: DEFAULT_AZURE_VOICE_ID,
     avatarId: DEFAULT_AVATAR_ID,
   }));
@@ -83,10 +72,6 @@ export const RealtimeConfigurator = () => {
         next.customSpeechEndpoint = '';
         changed = true;
       }
-      if (prev.voiceTab !== voiceBehavior.defaultTab) {
-        next.voiceTab = voiceBehavior.defaultTab;
-        changed = true;
-      }
       if (!requiresAgentId && prev.agentId) {
         next.agentId = '';
         changed = true;
@@ -105,7 +90,6 @@ export const RealtimeConfigurator = () => {
     capabilityFlags.semanticVad.enabled,
     capabilityFlags.instructions.enabled,
     capabilityFlags.customSpeech.enabled,
-    voiceBehavior.defaultTab,
     requiresAgentId,
   ]);
 
@@ -138,15 +122,6 @@ export const RealtimeConfigurator = () => {
     setFormState((prev) => ({ ...prev, agentId: value }));
   };
 
-  const handleVoiceTabChange = (nextTab: VoiceTab) => {
-    setFormState((prev) => (prev.voiceTab === nextTab ? prev : { ...prev, voiceTab: nextTab }));
-  };
-
-  const handleOpenAiVoiceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const { value } = event.target;
-    setFormState((prev) => ({ ...prev, openaiVoiceId: value }));
-  };
-
   const handleAzureVoiceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const { value } = event.target;
     setFormState((prev) => ({ ...prev, azureVoiceId: value }));
@@ -156,11 +131,6 @@ export const RealtimeConfigurator = () => {
     const { value } = event.target;
     setFormState((prev) => ({ ...prev, avatarId: value }));
   };
-
-  const selectedOpenAiVoice = useMemo(
-    () => getOpenAIVoiceById(formState.openaiVoiceId) ?? getOpenAIVoiceById(DEFAULT_OPENAI_VOICE_ID),
-    [formState.openaiVoiceId],
-  );
 
   const selectedAzureVoice = useMemo(
     () => getAzureVoiceById(formState.azureVoiceId) ?? getAzureVoiceById(DEFAULT_AZURE_VOICE_ID),
@@ -213,9 +183,7 @@ export const RealtimeConfigurator = () => {
       enabled: true,
       active: true,
       status:
-        formState.voiceTab === 'openai'
-          ? `OpenAI: ${selectedOpenAiVoice?.displayName ?? formState.openaiVoiceId}`
-          : `Azure: ${selectedAzureVoice?.displayName ?? formState.azureVoiceId}`,
+        `Azure: ${selectedAzureVoice?.displayName ?? formState.azureVoiceId}`,
     },
     {
       label: 'アバター',
@@ -239,13 +207,9 @@ export const RealtimeConfigurator = () => {
     capabilityFlags.customSpeech.enabled,
     capabilityFlags.customSpeech.reason,
     formState.customSpeechEndpoint,
-    formState.voiceTab,
-    formState.openaiVoiceId,
     formState.azureVoiceId,
-    selectedOpenAiVoice?.displayName,
     selectedAzureVoice?.displayName,
-    selectedAvatar?.displayName,
-    selectedAvatar?.character,
+    selectedAvatar,
   ]);
 
   const renderCapabilityReason = (enabled: boolean, reason?: string) => {
@@ -372,7 +336,7 @@ export const RealtimeConfigurator = () => {
                 onChange={handlePhraseListChange}
                 disabled={!capabilityFlags.phraseList.enabled}
                 rows={3}
-                placeholder="Azure, OpenAI, Speech Service"
+                placeholder="Azure, Speech Service, Voice Live"
                 className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
               />
             </label>
@@ -381,79 +345,31 @@ export const RealtimeConfigurator = () => {
 
           <div className="space-y-4">
             {renderSectionTitle('4. 出力音声', '使用するボイスと音響設定を切り替えます。')}
-            <div className="inline-flex rounded-full border border-white/10 bg-slate-900 p-1 text-xs font-semibold text-slate-300">
-              <button
-                type="button"
-                onClick={() => handleVoiceTabChange('openai')}
-                className={`rounded-full px-4 py-1 transition ${formState.voiceTab === 'openai' ? 'bg-cyan-400/20 text-cyan-200' : 'hover:bg-white/5'}`}
-              >
-                OpenAI ボイス
-              </button>
-              <button
-                type="button"
-                onClick={() => handleVoiceTabChange('azure')}
-                className={`rounded-full px-4 py-1 transition ${formState.voiceTab === 'azure' ? 'bg-cyan-400/20 text-cyan-200' : 'hover:bg-white/5'}`}
-              >
-                Azure ボイス
-              </button>
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                Azure ボイスキャラクター
+                <select
+                  value={formState.azureVoiceId}
+                  onChange={handleAzureVoiceChange}
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                >
+                  {AZURE_VOICE_OPTIONS.map((voice) => (
+                    <option key={voice.id} value={voice.id}>
+                      {voice.displayName} · {voice.locale}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {selectedAzureVoice ? (
+                <div className="rounded-xl border border-white/10 bg-slate-900/70 px-3 py-3 text-xs text-slate-200">
+                  <p>{selectedAzureVoice.description}</p>
+                  <p className="mt-2 text-[11px] text-slate-400">
+                    Locale: {selectedAzureVoice.locale}
+                    {selectedAzureVoice.tags && selectedAzureVoice.tags.length > 0 ? ` ・ ${selectedAzureVoice.tags.join(' / ')}` : ''}
+                  </p>
+                </div>
+              ) : null}
             </div>
-            {voiceBehavior.showAzureWarning && formState.voiceTab === 'azure' ? (
-              <p className="text-xs text-amber-300">リアルタイム系モデルで Azure ボイスを選択すると遅延が増加する可能性があります。</p>
-            ) : null}
-
-            {formState.voiceTab === 'openai' ? (
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                  OpenAI ボイスキャラクター
-                  <select
-                    value={formState.openaiVoiceId}
-                    onChange={handleOpenAiVoiceChange}
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
-                  >
-                    {OPENAI_VOICE_OPTIONS.map((voice) => (
-                      <option key={voice.id} value={voice.id}>
-                        {voice.displayName} · {voice.locale}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {selectedOpenAiVoice ? (
-                  <div className="rounded-xl border border-white/10 bg-slate-900/70 px-3 py-3 text-xs text-slate-200">
-                    <p>{selectedOpenAiVoice.description}</p>
-                    <p className="mt-2 text-[11px] text-slate-400">
-                      Locale: {selectedOpenAiVoice.locale}
-                      {selectedOpenAiVoice.tags && selectedOpenAiVoice.tags.length > 0 ? ` ・ ${selectedOpenAiVoice.tags.join(' / ')}` : ''}
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                  Azure ボイスキャラクター
-                  <select
-                    value={formState.azureVoiceId}
-                    onChange={handleAzureVoiceChange}
-                    className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
-                  >
-                    {AZURE_VOICE_OPTIONS.map((voice) => (
-                      <option key={voice.id} value={voice.id}>
-                        {voice.displayName} · {voice.locale}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {selectedAzureVoice ? (
-                  <div className="rounded-xl border border-white/10 bg-slate-900/70 px-3 py-3 text-xs text-slate-200">
-                    <p>{selectedAzureVoice.description}</p>
-                    <p className="mt-2 text-[11px] text-slate-400">
-                      Locale: {selectedAzureVoice.locale}
-                      {selectedAzureVoice.tags && selectedAzureVoice.tags.length > 0 ? ` ・ ${selectedAzureVoice.tags.join(' / ')}` : ''}
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-            )}
 
             <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
               カスタム音声モデル URL
@@ -590,7 +506,6 @@ export const RealtimeConfigurator = () => {
             <p className="font-semibold text-cyan-200">接続メモ</p>
             <ul className="mt-2 space-y-1">
               <li>• {requiresAgentId ? 'Agent ID を指定してバックエンドで代理接続します。' : 'バックエンドで選択モデルを直接指定します。'}</li>
-              <li>• voiceTab: {formState.voiceTab === 'azure' ? 'Azure ボイス構成を優先' : 'OpenAI ボイスを優先'}</li>
               <li>• 認識言語: {formState.language || '未設定'}</li>
             </ul>
           </div>

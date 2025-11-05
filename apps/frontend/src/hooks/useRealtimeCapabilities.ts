@@ -2,14 +2,12 @@ import { useMemo } from 'react';
 import type {
   ModelMetadata,
   RealtimeCapabilityFlags,
-  VoiceBehavior,
 } from '../types/realtimeAvatar';
 import { DEFAULT_MODEL_ID, MODEL_CONFIGS, getModelById } from '../utils/realtimeModelConfigs';
 
 interface UseRealtimeCapabilitiesResult {
   model: ModelMetadata;
   capabilityFlags: RealtimeCapabilityFlags;
-  voiceBehavior: VoiceBehavior;
   requiresAgentId: boolean;
 }
 
@@ -68,15 +66,9 @@ export const useRealtimeCapabilities = (modelId: string): UseRealtimeCapabilitie
       },
     };
 
-    const voiceBehavior: VoiceBehavior = {
-      defaultTab: rawCapabilities.voiceDefaultTab,
-      showAzureWarning: rawCapabilities.azureVoiceWarning,
-    };
-
     return {
       model,
       capabilityFlags,
-      voiceBehavior,
       requiresAgentId: model.category === 'agent',
     };
   }, [modelId]);
