@@ -152,7 +152,7 @@ jobs:
             --set-env-vars APP_ALLOWED_ORIGINS="$ALLOWED_ORIGINS_CSV" \
             --only-show-errors
 
-          az containerapp ingress cors update \
+          if ! az containerapp ingress cors enable \
             --name "$CONTAINER_APP_NAME" \
             --resource-group "$RESOURCE_GROUP_NAME" \
             --allowed-origins "${unique_origins[@]}" \
@@ -160,7 +160,17 @@ jobs:
             --allowed-headers '*' \
             --expose-headers '*' \
             --allow-credentials true \
-            --only-show-errors
+            --only-show-errors; then
+            az containerapp ingress cors update \
+              --name "$CONTAINER_APP_NAME" \
+              --resource-group "$RESOURCE_GROUP_NAME" \
+              --allowed-origins "${unique_origins[@]}" \
+              --allowed-methods GET POST OPTIONS \
+              --allowed-headers '*' \
+              --expose-headers '*' \
+              --allow-credentials true \
+              --only-show-errors
+          fi
 
       - name: Publish artifact summary
         if: success()
