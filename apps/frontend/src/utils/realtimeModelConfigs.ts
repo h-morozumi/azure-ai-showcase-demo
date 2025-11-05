@@ -1,158 +1,180 @@
-import type { ModelCategory, ModelMetadata } from '../types/realtimeAvatar';
-
-/**
- * UI で選択可能なモデル一覧。各モデルがサポートする機能を rawCapabilities で定義する。
- */
-export const MODEL_CONFIGS: ModelMetadata[] = [
-  {
-    id: 'gpt-realtime-mini',
-    label: 'GPT Realtime Mini',
-    description: '低レイテンシ応答向けの軽量モデル。semantic VAD を利用可能。',
-    category: 'realtime',
-    tags: ['低遅延', 'WebRTC'],
-    rawCapabilities: {
-      supportsEOU: false,
-      supportsPhraseList: false,
-      supportsSemanticVad: true,
-      supportsInstructions: true,
-      supportsCustomSpeech: false,
-      supportsAzureLanguage: true,
-      azureVoiceWarning: true,
-    },
-  },
-  {
-    id: 'gpt-realtime',
-    label: 'GPT Realtime',
-    description: '低遅延と高品質を両立したリアルタイム会話モデル。',
-    category: 'realtime',
-    tags: ['リアルタイム', 'WebRTC'],
-    rawCapabilities: {
-      supportsEOU: false,
-      supportsPhraseList: false,
-      supportsSemanticVad: true,
-      supportsInstructions: true,
-      supportsCustomSpeech: false,
-      supportsAzureLanguage: true,
-      azureVoiceWarning: true,
-    },
-  },
-  {
-    id: 'gpt-4o-mini-realtime',
-    label: 'GPT-4o Mini Realtime',
-    description: 'マルチモーダル軽量モデルのリアルタイム版。',
-    category: 'realtime',
-    tags: ['マルチモーダル', '低遅延'],
-    rawCapabilities: {
-      supportsEOU: false,
-      supportsPhraseList: false,
-      supportsSemanticVad: false,
-      supportsInstructions: true,
-      supportsCustomSpeech: false,
-      supportsAzureLanguage: true,
-      azureVoiceWarning: true,
-    },
-  },
-  {
-    id: 'phi4-mm-realtime',
-    label: 'Phi-4 MM Realtime',
-    description: '軽量マルチモーダルモデルのリアルタイム推論。',
-    category: 'realtime',
-    tags: ['軽量', 'コスト効率'],
-    rawCapabilities: {
-      supportsEOU: false,
-      supportsPhraseList: false,
-      supportsSemanticVad: false,
-      supportsInstructions: true,
-      supportsCustomSpeech: false,
-      supportsAzureLanguage: true,
-      azureVoiceWarning: true,
-    },
-  },
-  {
-    id: 'gpt-4o',
-    label: 'GPT-4o',
-    description: '高品質なマルチモーダル応答を提供するフラグシップモデル。',
-    category: 'standard',
-    tags: ['高品質', '汎用'],
-    rawCapabilities: {
-      supportsEOU: true,
-      supportsPhraseList: true,
-      supportsSemanticVad: false,
-      supportsInstructions: true,
-      supportsCustomSpeech: true,
-      supportsAzureLanguage: true,
-      azureVoiceWarning: false,
-    },
-  },
-  {
-    id: 'gpt-4.1',
-    label: 'GPT-4.1',
-    description: '正確性を重視したマルチモーダルモデル。Azure Speech 機能を広く活用可能。',
-    category: 'standard',
-    tags: ['正確性', 'マルチモーダル'],
-    rawCapabilities: {
-      supportsEOU: true,
-      supportsPhraseList: true,
-      supportsSemanticVad: false,
-      supportsInstructions: true,
-      supportsCustomSpeech: true,
-      supportsAzureLanguage: true,
-      azureVoiceWarning: false,
-    },
-  },
-  {
-    id: 'gpt-5-preview',
-    label: 'GPT-5 Preview',
-    description: '最新世代の高度な対話モデル。',
-    category: 'standard',
-    tags: ['最新', 'プレビュー'],
-    rawCapabilities: {
-      supportsEOU: true,
-      supportsPhraseList: true,
-      supportsSemanticVad: false,
-      supportsInstructions: true,
-      supportsCustomSpeech: true,
-      supportsAzureLanguage: true,
-      azureVoiceWarning: false,
-    },
-  },
-  {
-    id: 'agent-runtime',
-    label: 'Azure AI Agent (Agent ID 指定)',
-    description: 'Agent Service で作成した会話エージェントを利用します。',
-    category: 'agent',
-    tags: ['Agent'],
-    rawCapabilities: {
-      supportsEOU: true,
-      supportsPhraseList: true,
-      supportsSemanticVad: false,
-      supportsInstructions: false,
-      supportsCustomSpeech: true,
-      supportsAzureLanguage: true,
-      azureVoiceWarning: false,
-    },
-  },
-];
+import type { ModelCategory, RawCapabilities } from '../types/realtimeAvatar';
 
 export const MODEL_CATEGORY_LABELS: Record<ModelCategory, string> = {
   realtime: 'リアルタイムモデル',
-  standard: 'マルチモーダル標準モデル',
+  multimodal: 'マルチモーダルモデル',
   agent: 'Azure AI Agent',
 };
 
-const groups: Record<ModelCategory, ModelMetadata[]> = {
-  realtime: [],
-  standard: [],
-  agent: [],
+export const DEFAULT_MODEL_FALLBACK = 'gpt-realtime';
+
+const DEFAULT_CAPABILITIES: RawCapabilities = {
+  supportsEOU: true,
+  supportsPhraseList: true,
+  supportsSemanticVad: false,
+  supportsInstructions: true,
+  supportsCustomSpeech: true,
+  supportsAzureLanguage: true,
+  azureVoiceWarning: false,
 };
 
-for (const model of MODEL_CONFIGS) {
-  groups[model.category].push(model);
-}
+const MODEL_CAPABILITY_MAP: Record<string, RawCapabilities> = {
+  'gpt-realtime': {
+    supportsEOU: false,
+    supportsPhraseList: false,
+    supportsSemanticVad: true,
+    supportsInstructions: true,
+    supportsCustomSpeech: false,
+    supportsAzureLanguage: true,
+    azureVoiceWarning: true,
+  },
+  'gpt-realtime-mini': {
+    supportsEOU: false,
+    supportsPhraseList: false,
+    supportsSemanticVad: true,
+    supportsInstructions: true,
+    supportsCustomSpeech: false,
+    supportsAzureLanguage: true,
+    azureVoiceWarning: true,
+  },
+  'gpt-4o-mini-realtime': {
+    supportsEOU: false,
+    supportsPhraseList: false,
+    supportsSemanticVad: false,
+    supportsInstructions: true,
+    supportsCustomSpeech: false,
+    supportsAzureLanguage: true,
+    azureVoiceWarning: true,
+  },
+  'phi4-mm-realtime': {
+    supportsEOU: false,
+    supportsPhraseList: false,
+    supportsSemanticVad: false,
+    supportsInstructions: true,
+    supportsCustomSpeech: false,
+    supportsAzureLanguage: true,
+    azureVoiceWarning: true,
+  },
+  'gpt-4o': {
+    supportsEOU: true,
+    supportsPhraseList: true,
+    supportsSemanticVad: false,
+    supportsInstructions: true,
+    supportsCustomSpeech: true,
+    supportsAzureLanguage: true,
+    azureVoiceWarning: false,
+  },
+  'gpt-4o-mini': {
+    supportsEOU: true,
+    supportsPhraseList: true,
+    supportsSemanticVad: false,
+    supportsInstructions: true,
+    supportsCustomSpeech: true,
+    supportsAzureLanguage: true,
+    azureVoiceWarning: false,
+  },
+  'gpt-4.1': {
+    supportsEOU: true,
+    supportsPhraseList: true,
+    supportsSemanticVad: false,
+    supportsInstructions: true,
+    supportsCustomSpeech: true,
+    supportsAzureLanguage: true,
+    azureVoiceWarning: false,
+  },
+  'gpt-4.1-mini': {
+    supportsEOU: true,
+    supportsPhraseList: true,
+    supportsSemanticVad: false,
+    supportsInstructions: true,
+    supportsCustomSpeech: true,
+    supportsAzureLanguage: true,
+    azureVoiceWarning: false,
+  },
+  'gpt-5': {
+    supportsEOU: true,
+    supportsPhraseList: true,
+    supportsSemanticVad: false,
+    supportsInstructions: true,
+    supportsCustomSpeech: true,
+    supportsAzureLanguage: true,
+    azureVoiceWarning: false,
+  },
+  'gpt-5-mini': {
+    supportsEOU: true,
+    supportsPhraseList: true,
+    supportsSemanticVad: false,
+    supportsInstructions: true,
+    supportsCustomSpeech: true,
+    supportsAzureLanguage: true,
+    azureVoiceWarning: false,
+  },
+  'gpt-5-nano': {
+    supportsEOU: true,
+    supportsPhraseList: true,
+    supportsSemanticVad: false,
+    supportsInstructions: true,
+    supportsCustomSpeech: true,
+    supportsAzureLanguage: true,
+    azureVoiceWarning: false,
+  },
+  'gpt-5-chat': {
+    supportsEOU: true,
+    supportsPhraseList: true,
+    supportsSemanticVad: false,
+    supportsInstructions: true,
+    supportsCustomSpeech: true,
+    supportsAzureLanguage: true,
+    azureVoiceWarning: false,
+  },
+  'phi4-mini': {
+    supportsEOU: true,
+    supportsPhraseList: true,
+    supportsSemanticVad: false,
+    supportsInstructions: true,
+    supportsCustomSpeech: true,
+    supportsAzureLanguage: true,
+    azureVoiceWarning: false,
+  },
+  'agent-runtime': {
+    supportsEOU: true,
+    supportsPhraseList: true,
+    supportsSemanticVad: false,
+    supportsInstructions: false,
+    supportsCustomSpeech: true,
+    supportsAzureLanguage: true,
+    azureVoiceWarning: false,
+  },
+};
 
-export const MODEL_GROUPS: Record<ModelCategory, ModelMetadata[]> = groups;
+const MODEL_TAGS_MAP: Record<string, string[]> = {
+  'gpt-realtime': ['リアルタイム', 'WebRTC'],
+  'gpt-realtime-mini': ['低遅延', '軽量'],
+  'gpt-4o-mini-realtime': ['マルチモーダル', '低遅延'],
+  'phi4-mm-realtime': ['軽量', 'コスト効率'],
+  'gpt-4o': ['高品質', '汎用'],
+  'gpt-4o-mini': ['軽量', 'マルチモーダル'],
+  'gpt-4.1': ['正確性', 'マルチモーダル'],
+  'gpt-4.1-mini': ['軽量', 'マルチモーダル'],
+  'gpt-5': ['最新', 'フラグシップ'],
+  'gpt-5-mini': ['軽量', '最新'],
+  'gpt-5-nano': ['超軽量', '最新'],
+  'gpt-5-chat': ['対話特化'],
+  'phi4-mini': ['軽量', 'マルチモーダル'],
+  'agent-runtime': ['Agent'],
+};
 
-export const DEFAULT_MODEL_ID = MODEL_CONFIGS[0]?.id ?? '';
+export const getCapabilitiesForModel = (modelId: string): RawCapabilities =>
+  MODEL_CAPABILITY_MAP[modelId] ?? DEFAULT_CAPABILITIES;
 
-export const getModelById = (modelId: string): ModelMetadata | undefined =>
-  MODEL_CONFIGS.find((model) => model.id === modelId);
+export const getTagsForModel = (modelId: string): string[] => MODEL_TAGS_MAP[modelId] ?? [];
+
+export const normalizeModelCategory = (category: string): ModelCategory => {
+  if (category === 'multimodal') {
+    return 'multimodal';
+  }
+  if (category === 'agent') {
+    return 'agent';
+  }
+  return 'realtime';
+};

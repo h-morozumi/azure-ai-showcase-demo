@@ -3,7 +3,7 @@ import type {
   ModelMetadata,
   RealtimeCapabilityFlags,
 } from '../types/realtimeAvatar';
-import { DEFAULT_MODEL_ID, MODEL_CONFIGS, getModelById } from '../utils/realtimeModelConfigs';
+import { DEFAULT_MODEL_FALLBACK, getCapabilitiesForModel } from '../utils/realtimeModelConfigs';
 
 interface UseRealtimeCapabilitiesResult {
   model: ModelMetadata;
@@ -14,10 +14,22 @@ interface UseRealtimeCapabilitiesResult {
 /**
  * モデル選択に応じた UI 制御用のフラグを計算する。
  */
-export const useRealtimeCapabilities = (modelId: string): UseRealtimeCapabilitiesResult => {
+export const useRealtimeCapabilities = (model: ModelMetadata | undefined): UseRealtimeCapabilitiesResult => {
   return useMemo(() => {
-    const model = getModelById(modelId) ?? MODEL_CONFIGS.find((candidate) => candidate.id === DEFAULT_MODEL_ID) ?? MODEL_CONFIGS[0];
-    const { rawCapabilities } = model;
+    const activeModel: ModelMetadata = model
+      ? model
+      : {
+          id: DEFAULT_MODEL_FALLBACK,
+          label: DEFAULT_MODEL_FALLBACK,
+          description: '',
+          category: 'realtime',
+          latencyProfile: '',
+          notes: undefined,
+          tags: [],
+          rawCapabilities: getCapabilitiesForModel(DEFAULT_MODEL_FALLBACK),
+        };
+
+    const { rawCapabilities } = activeModel;
 
     const capabilityFlags: RealtimeCapabilityFlags = {
       eou: {
@@ -30,7 +42,7 @@ export const useRealtimeCapabilities = (modelId: string): UseRealtimeCapabilitie
         enabled: rawCapabilities.supportsPhraseList,
         reason: rawCapabilities.supportsPhraseList
           ? undefined
-          : model.category === 'realtime'
+          : activeModel.category === 'realtime'
             ? 'リアルタイム系モデルでは phrase list を利用できません。'
             : '選択中のモデルでは phrase list を利用できません。',
       },
@@ -38,7 +50,7 @@ export const useRealtimeCapabilities = (modelId: string): UseRealtimeCapabilitie
         enabled: rawCapabilities.supportsSemanticVad,
         reason: rawCapabilities.supportsSemanticVad
           ? undefined
-          : model.category === 'realtime'
+          : activeModel.category === 'realtime'
             ? '選択中のリアルタイムモデルは semantic VAD をサポートしていません。'
             : 'semantic VAD は GPT Realtime モデル専用のオプションです。',
       },
@@ -46,7 +58,7 @@ export const useRealtimeCapabilities = (modelId: string): UseRealtimeCapabilitie
         enabled: rawCapabilities.supportsInstructions,
         reason: rawCapabilities.supportsInstructions
           ? undefined
-          : model.category === 'agent'
+          : activeModel.category === 'agent'
             ? 'Agent 利用時は session.instructions を送信できません。'
             : '選択中のモデルでは instructions を利用できません。',
       },
@@ -54,7 +66,7 @@ export const useRealtimeCapabilities = (modelId: string): UseRealtimeCapabilitie
         enabled: rawCapabilities.supportsCustomSpeech,
         reason: rawCapabilities.supportsCustomSpeech
           ? undefined
-          : model.category === 'realtime'
+          : activeModel.category === 'realtime'
             ? 'リアルタイム系モデルでは Azure Speech のカスタムモデル設定が適用されません。'
             : '選択中のモデルではカスタム音声モデルを利用できません。',
       },
@@ -67,9 +79,9 @@ export const useRealtimeCapabilities = (modelId: string): UseRealtimeCapabilitie
     };
 
     return {
-      model,
+        model: activeModel,
       capabilityFlags,
-      requiresAgentId: model.category === 'agent',
+        requiresAgentId: activeModel.category === 'agent',
     };
-  }, [modelId]);
+    }, [model]);
 };

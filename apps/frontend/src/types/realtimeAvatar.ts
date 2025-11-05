@@ -1,4 +1,4 @@
-export type ModelCategory = 'realtime' | 'standard' | 'agent';
+export type ModelCategory = 'realtime' | 'multimodal' | 'agent';
 
 export type VoiceProvider = 'azure';
 
@@ -16,7 +16,7 @@ export interface RealtimeCapabilityFlags {
   azureLanguage: CapabilityFlag;
 }
 
-interface RawCapabilities {
+export interface RawCapabilities {
   supportsEOU: boolean;
   supportsPhraseList: boolean;
   supportsSemanticVad: boolean;
@@ -31,6 +31,8 @@ export interface ModelMetadata {
   label: string;
   description: string;
   category: ModelCategory;
+  latencyProfile: string;
+  notes?: string;
   tags: string[];
   rawCapabilities: RawCapabilities;
 }
@@ -55,4 +57,31 @@ export interface AvatarOption {
   description: string;
   recommendedUse?: string;
   tags?: string[];
+  thumbnailUrl?: string;
+}
+
+export interface LanguageOptionItem {
+  code: string;
+  label: string;
+  note?: string;
+}
+
+export interface LanguageModeOption {
+  mode: string;
+  label: string;
+  description: string;
+}
+
+export interface RealtimeModelLanguageSupport {
+  modelId: string;
+  selectionMode: 'single' | 'multi';
+  allowAutoDetect: boolean;
+  languages: LanguageOptionItem[];
+}
+
+export interface LanguageOptionsState {
+  provider: string;
+  modes: LanguageModeOption[];
+  languages: LanguageOptionItem[];
+  realtimeModels: RealtimeModelLanguageSupport[];
 }

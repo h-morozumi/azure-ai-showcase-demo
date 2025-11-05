@@ -12,8 +12,7 @@ from app.config.avatar_options import list_avatars
 from app.config.language_options import (
     list_azure_speech_language_modes,
     list_azure_speech_languages,
-    list_gpt_realtime_languages,
-    list_phi4_mm_languages,
+    list_model_language_profiles,
 )
 from app.config.voice_options import (
     get_default_azure_voice_id,
@@ -26,10 +25,10 @@ from app.schemas.realtime import (
     LanguageModeSchema,
     LanguageOptionSchema,
     LanguageOptionsResponse,
-    ModelLanguageSupportSchema,
     AvatarOptionsResponse,
     RealtimeModelsResponse,
     RealtimeModelSchema,
+    ModelLanguageSupportSchema,
     VoiceOptionSchema,
     VoiceOptionsResponse,
 )
@@ -115,12 +114,6 @@ async def list_avatar_options(settings: Settings = Depends(get_app_settings)) ->
     return AvatarOptionsResponse(default_avatar_id=default_avatar_id, avatars=avatars)
 
 
-_REALTIME_LANGUAGE_MODEL_MAPPING = {
-    "gpt-realtime": list_gpt_realtime_languages,
-    "gpt-realtime-mini": list_gpt_realtime_languages,
-    "phi4-mm-realtime": list_phi4_mm_languages,
-}
-
 _MULTIMODAL_LANGUAGE_MODELS = [
     "gpt-4o",
     "gpt-4o-mini",
@@ -145,18 +138,21 @@ async def list_language_options() -> LanguageOptionsResponse:
     azure_modes = [LanguageModeSchema.from_dataclass(mode) for mode in list_azure_speech_language_modes()]
     azure_languages = [LanguageOptionSchema.from_dataclass(option) for option in list_azure_speech_languages()]
 
-    realtime_model_entries: list[ModelLanguageSupportSchema] = []
+    realtime_model_entries: list[ModelLanguageSupportSchema] = [
+        ModelLanguageSupportSchema.from_dataclass(profile) for profile in list_model_language_profiles()
+    ]
 
-    for model_id, provider_fn in _REALTIME_LANGUAGE_MODEL_MAPPING.items():
-        languages = [LanguageOptionSchema.from_dataclass(option) for option in provider_fn()]
-        realtime_model_entries.append(
-            ModelLanguageSupportSchema(model_id=model_id, languages=languages),
-        )
-
-    multimodal_languages = [LanguageOptionSchema.from_dataclass(option) for option in list_azure_speech_languages() if option.code]
+    multimodal_languages = [
+        LanguageOptionSchema.from_dataclass(option) for option in list_azure_speech_languages()
+    ]
     for model_id in _MULTIMODAL_LANGUAGE_MODELS:
         realtime_model_entries.append(
-            ModelLanguageSupportSchema(model_id=model_id, languages=multimodal_languages),
+            ModelLanguageSupportSchema(
+                model_id=model_id,
+                selection_mode="single",
+                allow_auto_detect=True,
+                languages=multimodal_languages,
+            ),
         )
 
     azure_response = AzureSpeechLanguagesResponse(modes=azure_modes, languages=azure_languages)

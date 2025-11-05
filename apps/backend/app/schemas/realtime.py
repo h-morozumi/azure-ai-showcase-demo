@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.config.avatar_options import AvatarOption
 from app.config.realtime_models import RealtimeModel
 from app.config.voice_options import VoiceOption
-from app.config.language_options import LanguageMode, LanguageOption
+from app.config.language_options import LanguageMode, LanguageOption, ModelLanguageProfile
 
 
 class RealtimeModelSchema(BaseModel):
@@ -141,7 +141,20 @@ class ModelLanguageSupportSchema(BaseModel):
     """Realtime モデル固有の言語サポート情報。"""
 
     model_id: str = Field(..., description="対象モデル ID")
+    selection_mode: Literal["single", "multi"] = Field(..., description="選択モード")
+    allow_auto_detect: bool = Field(..., description="自動検出を許可するかどうか")
     languages: List[LanguageOptionSchema] = Field(..., description="選択可能な言語")
+
+    @classmethod
+    def from_dataclass(cls, profile: ModelLanguageProfile) -> "ModelLanguageSupportSchema":
+        """ModelLanguageProfile dataclass からスキーマを生成する。"""
+
+        return cls(
+            model_id=profile.model_id,
+            selection_mode=profile.selection_mode,
+            allow_auto_detect=profile.allow_auto_detect,
+            languages=[LanguageOptionSchema.from_dataclass(lang) for lang in profile.languages],
+        )
 
 
 class LanguageOptionsResponse(BaseModel):

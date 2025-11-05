@@ -150,13 +150,14 @@
     | `turn_detection.type = semantic_vad` | 非表示 | `gpt-realtime` / `gpt-realtime-mini` のみ選択肢に追加。[^turn-detection] | 他モデルでは選択肢を表示しない（`azure_semantic_vad` 系を既定）。 |
     | `turn_detection.end_of_utterance_detection` 詳細調整 | 折りたたみ | EOU 有効時のみ展開。 | 無効時はセクションごと collapse。 |
     | `session.instructions` 入力 | プレースホルダ | モデル接続方式が **エージェント利用**でないこと。[^session-update] | Agent 選択時はフィールドをロックし、「Agent 利用時は instructions が無効」と表示。 |
-    | Azure Speech transcription 設定 | 自動 | モデルが `gpt-4o` など非リアルタイムの場合に言語/カスタムモデル設定を活性。[^audio-input] | リアルタイム系では `language` フィールドのみ有効、`custom_speech` 等は隠す。 |
+   | Azure Speech transcription 設定 | 自動 | モデルが `gpt-4o` など非リアルタイムの場合に言語/カスタムモデル設定を活性。プロファイル (`selection_mode`, `allow_auto_detect`) に基づき UI が単一/複数 UI と自動検出可否を切り替える。[^audio-input] | リアルタイム系では `selection_mode=single` のため単一選択 + 自動検出なし。プロファイル未定義のモデルは Azure Speech の `auto` → `single` 順で初期化。 |
     | 音声出力ボイス選択 | Azure ボイス一覧 | リアルタイム系選択時は「OpenAI ボイス」タブを既定にし、Azure ボイス利用には注意文（遅延増加）。[^voice] | 該当タブを無効化せず、警告バナーで選択判断を促す。 |
     | アバター設定 (`session.avatar`) | ON | 全モデル共通。 | モデル制限なし。 |
     | 関数呼び出し (`session.tools`) | OFF | すべてのモデルで利用可能。Voice RAG シナリオのみ推奨ラベル。[^realtime-ref] | モデルによる制限なし。 |
 
     - **UI 実装指針**
        - モデルドロップダウン変更時に `capabilities` オブジェクトを計算し、各フォームコンポーネントへ `enabled`/`reason` を渡して表示制御する。
+      - 入力言語モードのドロップダウンは廃止し、`selection_mode` が `multi` のモデルのみ複数選択 UI（最大 10 件）を表示する。`allow_auto_detect` が `false` のモデルでは自動検出エントリを除外する。
        - 補助テキストは Tailwind の `text-sm text-muted` を基調にし、Tooltip コンポーネントでサポート状況を即時表示。
        - 非対応機能はグレーアウト＋ドキュメントリンク（外部アイコン付）を配置し、仕様にすぐアクセスできるようにする。
 

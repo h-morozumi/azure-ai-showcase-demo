@@ -87,7 +87,7 @@
 - **エンドポイント**: `GET /api/v1/realtime/languages`
 - **レスポンス構造**:
   - `azure_speech`: Azure Speech モードと言語一覧
-  - `realtime_models[]`: モデル ID ごとのサポート言語
+  - `realtime_models[]`: モデル ID ごとのサポート言語プロファイル（`model_id`, `selection_mode`, `allow_auto_detect`, `languages[]`）
 - **使用例**:
   - 自動検出（空文字）
   - 単一言語（BCP-47 または言語コード）
@@ -95,11 +95,13 @@
 
 ### 3.2 Azure Speech の構成モード
 
+UI ではモデル単位の `selection_mode` を優先し、`multi` のプロファイルを持つモデルのみ複数言語ヒントのチェックボックスを表示します。`allow_auto_detect` が `true` の場合は単一選択モードでも「自動検出 (空文字)」が並びます。プロファイルが存在しないモデルは、以下の Azure Speech モード定義の先頭（`auto`→`single`→`multi` の順）を参照して初期化されます。
+
 | mode  | 表示名                     | 説明 |
 |-------|----------------------------|------|
 | `auto`  | 自動多言語検出 (既定)       | `model="azure-speech"` とし、`language=""` を指定（空文字）で自動検出。 |
 | `single`| 単一言語構成               | `language` に一覧から 1 言語コードを設定。 |
-| `multi` | 最大 10 言語の多言語構成   | `language="en-US,ja-JP,..."` のようにカンマ区切りでヒント提示。 |
+| `multi` | 最大 10 言語の多言語構成   | `language="en-US,ja-JP,..."` のようにカンマ区切りでヒント提示。UI は該当プロファイルのモデルのみ複数選択 UI を表示。 |
 
 #### 設定例
 
@@ -184,5 +186,6 @@ Chinese / English / French / German / Italian / Japanese / Portuguese / Spanish
 
 | 日付 | 内容 |
 |------|------|
+| 2025-11-05 | 言語プロファイル (`selection_mode`, `allow_auto_detect`) と UI 自動切替仕様を追記。 |
 | 2025-11-05 | 利用可能なモデル仕様を追加。 |
 | 2025-11-05 | 初版（アバター・音声入力仕様）を作成。 |

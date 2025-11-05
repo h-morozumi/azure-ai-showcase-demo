@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRealtimeCapabilities } from '../hooks/useRealtimeCapabilities';
-import type { ModelCategory } from '../types/realtimeAvatar';
-import { MODEL_CATEGORY_LABELS, MODEL_GROUPS, MODEL_CONFIGS, DEFAULT_MODEL_ID } from '../utils/realtimeModelConfigs';
-import type { ModelMetadata } from '../types/realtimeAvatar';
-import { AZURE_VOICE_OPTIONS, DEFAULT_AZURE_VOICE_ID, getAzureVoiceById } from '../utils/voiceOptions';
-import { AVATAR_OPTIONS, DEFAULT_AVATAR_ID, getAvatarById } from '../utils/avatarOptions';
+import { useRealtimeMetadata } from '../hooks/useRealtimeMetadata';
+import type { ModelCategory, ModelMetadata } from '../types/realtimeAvatar';
+import { MODEL_CATEGORY_LABELS } from '../utils/realtimeModelConfigs';
+import { findVoiceById } from '../utils/voiceOptions';
+import { findAvatarById } from '../utils/avatarOptions';
 
 type SemanticVadMode = 'azure_semantic_vad' | 'semantic_vad';
 
@@ -22,29 +22,70 @@ interface FormState {
   enableEou: boolean;
   semanticVad: SemanticVadMode;
   language: string;
+  multiLanguageSelections: string[];
   customSpeechEndpoint: string;
   agentId: string;
   azureVoiceId: string;
   avatarId: string;
 }
 
-const initialModel: ModelMetadata = MODEL_CONFIGS.find((model) => model.id === DEFAULT_MODEL_ID) ?? MODEL_CONFIGS[0];
+const MAX_MULTI_LANGUAGE_SELECTION = 10;
 
 export const RealtimeConfigurator = () => {
-  const [selectedModelId, setSelectedModelId] = useState<string>(initialModel.id);
-  const { model, capabilityFlags, requiresAgentId } = useRealtimeCapabilities(selectedModelId);
+  const {
+    loading,
+    error,
+    models,
+    groupedModels,
+    defaultModelId,
+    voiceOptions,
+    defaultVoiceId,
+    avatarOptions,
+    defaultAvatarId,
+    languageOptions,
+    voiceLiveAgentId,
+  } = useRealtimeMetadata();
+
+  const [selectedModelId, setSelectedModelId] = useState<string>('');
 
   const [formState, setFormState] = useState<FormState>(() => ({
     instructions: '',
     phraseList: '',
     enableEou: false,
     semanticVad: 'azure_semantic_vad',
-    language: 'ja-JP',
+    language: '',
+    multiLanguageSelections: [],
     customSpeechEndpoint: '',
     agentId: '',
-    azureVoiceId: DEFAULT_AZURE_VOICE_ID,
-    avatarId: DEFAULT_AVATAR_ID,
+    azureVoiceId: '',
+    avatarId: '',
   }));
+
+  const selectedModel = useMemo<ModelMetadata | undefined>(
+    () => models.find((candidate) => candidate.id === selectedModelId) ?? models[0],
+    [models, selectedModelId],
+  );
+
+  const { model, capabilityFlags, requiresAgentId } = useRealtimeCapabilities(selectedModel);
+
+  const activeLanguageProfile = useMemo(
+    () => languageOptions.realtimeModels.find((entry) => entry.modelId === model.id) ?? null,
+    [languageOptions.realtimeModels, model.id],
+  );
+
+  const fallbackLanguageMode = useMemo(() => {
+    const singleMode = languageOptions.modes.find((item) => item.mode === 'single');
+    if (singleMode) {
+      return singleMode.mode;
+    }
+    return languageOptions.modes[0]?.mode ?? 'single';
+  }, [languageOptions.modes]);
+
+  useEffect(() => {
+    if (!selectedModelId && defaultModelId) {
+      setSelectedModelId(defaultModelId);
+    }
+  }, [defaultModelId, selectedModelId]);
 
   // モデル変更に伴い無効な設定値をリセットする
   useEffect(() => {
@@ -77,9 +118,89 @@ export const RealtimeConfigurator = () => {
         changed = true;
       }
 
-      if (!AVATAR_OPTIONS.some((avatar) => avatar.id === prev.avatarId)) {
-        next.avatarId = DEFAULT_AVATAR_ID;
+      if (voiceOptions.length > 0 && !voiceOptions.some((voice) => voice.id === prev.azureVoiceId)) {
+        next.azureVoiceId = defaultVoiceId || voiceOptions[0].id;
         changed = true;
+      }
+
+      if (avatarOptions.length > 0 && !avatarOptions.some((avatar) => avatar.id === prev.avatarId)) {
+        next.avatarId = defaultAvatarId || avatarOptions[0].id;
+        changed = true;
+      }
+
+    const profile = activeLanguageProfile;
+    const selectionMode = profile?.selectionMode ?? fallbackLanguageMode;
+
+    const rawLanguages = profile ? profile.languages : languageOptions.languages;
+    const allowAutoDetect = profile ? profile.allowAutoDetect : true;
+
+      const selectableForMulti = rawLanguages.filter((item) => item.code);
+      const selectableForSingle = allowAutoDetect ? rawLanguages : rawLanguages.filter((item) => item.code);
+
+      const effectiveLanguageMode = selectionMode;
+
+      if (effectiveLanguageMode === 'multi') {
+        let filteredSelections = prev.multiLanguageSelections.filter((code) =>
+          selectableForMulti.some((option) => option.code === code),
+        );
+
+        if (filteredSelections.length > MAX_MULTI_LANGUAGE_SELECTION) {
+          filteredSelections = filteredSelections.slice(0, MAX_MULTI_LANGUAGE_SELECTION);
+        }
+
+        const orderedSelections = rawLanguages
+          .map((item) => item.code)
+          .filter((code) => code && filteredSelections.includes(code))
+          .slice(0, MAX_MULTI_LANGUAGE_SELECTION);
+
+        let activeSelections = orderedSelections;
+        if (activeSelections.length === 0 && selectableForMulti.length > 0) {
+          activeSelections = [selectableForMulti[0].code];
+        }
+
+        const hasMultiChanged =
+          prev.multiLanguageSelections.length !== activeSelections.length
+          || prev.multiLanguageSelections.some((code, index) => code !== activeSelections[index]);
+
+        if (hasMultiChanged) {
+          next.multiLanguageSelections = activeSelections;
+          changed = true;
+        }
+
+        const joinedLanguages = activeSelections.join(',');
+
+        if (prev.language !== joinedLanguages) {
+          next.language = joinedLanguages;
+          changed = true;
+        }
+      } else if (effectiveLanguageMode === 'single') {
+        if (prev.multiLanguageSelections.length > 0) {
+          next.multiLanguageSelections = [];
+          changed = true;
+        }
+
+        if (selectableForSingle.length > 0) {
+          const preferredLanguage = selectableForSingle.some((item) => item.code === prev.language)
+            ? prev.language
+            : selectableForSingle[0].code ?? '';
+
+          if (next.language !== preferredLanguage) {
+            next.language = preferredLanguage;
+            changed = true;
+          }
+        } else if (next.language !== '') {
+          next.language = '';
+          changed = true;
+        }
+      } else {
+        if (next.multiLanguageSelections.length > 0) {
+          next.multiLanguageSelections = [];
+          changed = true;
+        }
+        if (next.language !== '') {
+          next.language = '';
+          changed = true;
+        }
       }
 
       return changed ? next : prev;
@@ -91,6 +212,13 @@ export const RealtimeConfigurator = () => {
     capabilityFlags.instructions.enabled,
     capabilityFlags.customSpeech.enabled,
     requiresAgentId,
+    voiceOptions,
+    defaultVoiceId,
+    avatarOptions,
+    defaultAvatarId,
+    languageOptions,
+    fallbackLanguageMode,
+    activeLanguageProfile,
   ]);
 
   const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -107,9 +235,54 @@ export const RealtimeConfigurator = () => {
     setFormState((prev) => ({ ...prev, phraseList: value }));
   };
 
-  const handleLanguageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const { value } = event.target;
+    const selectionMode = activeLanguageProfile?.selectionMode ?? fallbackLanguageMode;
+    if (selectionMode === 'multi') {
+      return;
+    }
     setFormState((prev) => ({ ...prev, language: value }));
+  };
+
+  const handleMultiLanguageToggle = (code: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { checked } = event.target;
+    const selectionMode = activeLanguageProfile?.selectionMode ?? fallbackLanguageMode;
+    if (selectionMode !== 'multi') {
+      return;
+    }
+    setFormState((prev) => {
+      const languageOrdering = activeLanguageProfile
+        ? activeLanguageProfile.languages
+        : languageOptions.languages;
+
+      if (!languageOrdering.some((item) => item.code === code)) {
+        return prev;
+      }
+
+      let selections = prev.multiLanguageSelections;
+      if (checked) {
+        if (selections.includes(code) || selections.length >= MAX_MULTI_LANGUAGE_SELECTION) {
+          return prev;
+        }
+        selections = [...selections, code];
+      } else {
+        if (!selections.includes(code)) {
+          return prev;
+        }
+        selections = selections.filter((item) => item !== code);
+      }
+
+      const ordered = languageOrdering
+        .map((item) => item.code)
+        .filter((entry) => entry && selections.includes(entry))
+        .slice(0, MAX_MULTI_LANGUAGE_SELECTION);
+
+      return {
+        ...prev,
+        multiLanguageSelections: ordered,
+        language: ordered.join(','),
+      };
+    });
   };
 
   const handleCustomSpeechChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,14 +306,144 @@ export const RealtimeConfigurator = () => {
   };
 
   const selectedAzureVoice = useMemo(
-    () => getAzureVoiceById(formState.azureVoiceId) ?? getAzureVoiceById(DEFAULT_AZURE_VOICE_ID),
-    [formState.azureVoiceId],
+    () => findVoiceById(voiceOptions, formState.azureVoiceId),
+    [voiceOptions, formState.azureVoiceId],
   );
 
   const selectedAvatar = useMemo(
-    () => getAvatarById(formState.avatarId) ?? getAvatarById(DEFAULT_AVATAR_ID),
-    [formState.avatarId],
+    () => findAvatarById(avatarOptions, formState.avatarId),
+    [avatarOptions, formState.avatarId],
   );
+
+  const effectiveLanguageMode = activeLanguageProfile?.selectionMode ?? fallbackLanguageMode;
+
+  const allowsAutoDetect = activeLanguageProfile ? activeLanguageProfile.allowAutoDetect : true;
+
+  const isMultiLanguageMode = effectiveLanguageMode === 'multi';
+
+  const languageModeLabel = useMemo(() => {
+    if (isMultiLanguageMode) {
+      return '複数言語ヒント';
+    }
+    return allowsAutoDetect ? '単一言語 (自動検出可)' : '単一言語';
+  }, [allowsAutoDetect, isMultiLanguageMode]);
+
+  const languageModeDescription = useMemo(() => {
+    if (activeLanguageProfile) {
+      if (isMultiLanguageMode) {
+        return 'このモデルは複数の言語ヒントを指定できます。';
+      }
+      return activeLanguageProfile.allowAutoDetect
+        ? 'このモデルは自動検出をサポートします。'
+        : 'このモデルでは単一言語のみ指定できます。';
+    }
+    if (isMultiLanguageMode) {
+      return '複数の言語をヒントとして指定できます。';
+    }
+    if (allowsAutoDetect) {
+      return '自動検出または単一言語の指定が可能です。';
+    }
+    return '単一の言語を指定します。';
+  }, [activeLanguageProfile, allowsAutoDetect, isMultiLanguageMode]);
+
+  const baseLanguageOptions = activeLanguageProfile
+    ? activeLanguageProfile.languages
+    : languageOptions.languages;
+
+  const availableLanguages = useMemo(() => {
+    if (effectiveLanguageMode === 'multi') {
+      return baseLanguageOptions.filter((item) => item.code);
+    }
+    if (allowsAutoDetect) {
+      return baseLanguageOptions;
+    }
+    return baseLanguageOptions.filter((item) => item.code);
+  }, [baseLanguageOptions, effectiveLanguageMode, allowsAutoDetect]);
+
+  const selectedLanguageOption = useMemo(
+    () => {
+      if (effectiveLanguageMode === 'multi') {
+        return null;
+      }
+      return availableLanguages.find((item) => item.code === formState.language) ?? null;
+    },
+    [availableLanguages, effectiveLanguageMode, formState.language],
+  );
+
+  const selectedMultiLanguageLabels = useMemo(
+    () => {
+      if (effectiveLanguageMode !== 'multi') {
+        return [];
+      }
+      const selectedSet = new Set(formState.multiLanguageSelections);
+      return baseLanguageOptions
+        .filter((item) => item.code && selectedSet.has(item.code))
+        .map((item) => item.label);
+    },
+    [baseLanguageOptions, effectiveLanguageMode, formState.multiLanguageSelections],
+  );
+
+  const languageStatusLabel = useMemo(() => {
+    if (!capabilityFlags.azureLanguage.enabled) {
+      return 'モデル非対応';
+    }
+
+    if (isMultiLanguageMode) {
+      if (formState.multiLanguageSelections.length === 0) {
+        return '未選択';
+      }
+      const display = selectedMultiLanguageLabels;
+      if (display.length === 0) {
+        return formState.language || '未選択';
+      }
+      if (display.length <= 3) {
+        return display.join('、');
+      }
+      return `${display.slice(0, 3).join('、')} 他${display.length - 3}件`;
+    }
+
+    if (selectedLanguageOption) {
+      return selectedLanguageOption.label;
+    }
+
+    if (formState.language) {
+      return formState.language;
+    }
+
+    return '未選択';
+  }, [
+    capabilityFlags.azureLanguage.enabled,
+    formState.language,
+    formState.multiLanguageSelections,
+    isMultiLanguageMode,
+    selectedLanguageOption,
+    selectedMultiLanguageLabels,
+  ]);
+
+  const isLanguageConfigurationActive = useMemo(() => {
+    if (!capabilityFlags.azureLanguage.enabled) {
+      return false;
+    }
+    if (isMultiLanguageMode) {
+      return formState.multiLanguageSelections.length > 0;
+    }
+    // single モードでは自動検出 (空文字) も有効な選択とみなす
+    return availableLanguages.length > 0;
+  }, [
+    capabilityFlags.azureLanguage.enabled,
+    formState.multiLanguageSelections,
+    isMultiLanguageMode,
+    availableLanguages,
+  ]);
+
+  const languageCapabilityStatus = useMemo(() => {
+    if (!capabilityFlags.azureLanguage.enabled) {
+      return 'モデル非対応';
+    }
+    return `${languageModeLabel} · ${languageStatusLabel}`;
+  }, [capabilityFlags.azureLanguage.enabled, languageModeLabel, languageStatusLabel]);
+
+  const modelLanguageSupport = activeLanguageProfile?.languages ?? [];
 
   const capabilitySummary: CapabilitySummaryItem[] = useMemo(() => ([
     {
@@ -172,6 +475,13 @@ export const RealtimeConfigurator = () => {
       status: capabilityFlags.instructions.enabled && formState.instructions.length > 0 ? 'カスタムプロンプト設定済み' : capabilityFlags.instructions.enabled ? '入力可能' : 'モデル非対応',
     },
     {
+      label: '入力音声 (Azure Speech)',
+      enabled: capabilityFlags.azureLanguage.enabled,
+      active: isLanguageConfigurationActive,
+      reason: capabilityFlags.azureLanguage.reason,
+      status: languageCapabilityStatus,
+    },
+    {
       label: 'Azure Speech カスタムモデル',
       enabled: capabilityFlags.customSpeech.enabled,
       active: capabilityFlags.customSpeech.enabled && formState.customSpeechEndpoint.length > 0,
@@ -182,8 +492,9 @@ export const RealtimeConfigurator = () => {
       label: '音声キャラクター',
       enabled: true,
       active: true,
-      status:
-        `Azure: ${selectedAzureVoice?.displayName ?? formState.azureVoiceId}`,
+      status: selectedAzureVoice
+        ? `${selectedAzureVoice.displayName} · ${selectedAzureVoice.locale}`
+        : '未選択',
     },
     {
       label: 'アバター',
@@ -204,13 +515,49 @@ export const RealtimeConfigurator = () => {
     capabilityFlags.instructions.enabled,
     capabilityFlags.instructions.reason,
     formState.instructions,
+    capabilityFlags.azureLanguage.enabled,
+    capabilityFlags.azureLanguage.reason,
+    isLanguageConfigurationActive,
+    languageCapabilityStatus,
     capabilityFlags.customSpeech.enabled,
     capabilityFlags.customSpeech.reason,
     formState.customSpeechEndpoint,
-    formState.azureVoiceId,
-    selectedAzureVoice?.displayName,
+    selectedAzureVoice,
     selectedAvatar,
   ]);
+
+  const categoryOrder: ModelCategory[] = ['realtime', 'multimodal', 'agent'];
+
+  if (loading) {
+    return (
+      <section className="mt-24 space-y-6" aria-label="Live Voice 設定シミュレーター">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-300">
+          メタデータを読み込み中です…
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="mt-24 space-y-6" aria-label="Live Voice 設定シミュレーター">
+        <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-6 text-slate-200">
+          <p className="text-sm font-semibold text-white">メタデータの取得に失敗しました。</p>
+          <p className="text-xs text-amber-300">{error}</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (models.length === 0) {
+    return (
+      <section className="mt-24 space-y-6" aria-label="Live Voice 設定シミュレーター">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-300">
+          利用可能なモデルが構成されていません。バックエンド設定を確認してください。
+        </div>
+      </section>
+    );
+  }
 
   const renderCapabilityReason = (enabled: boolean, reason?: string) => {
     if (enabled || !reason) {
@@ -257,15 +604,21 @@ export const RealtimeConfigurator = () => {
                 onChange={handleModelChange}
                 className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
               >
-                {(Object.keys(MODEL_CATEGORY_LABELS) as ModelCategory[]).map((category) => (
-                  <optgroup key={category} label={MODEL_CATEGORY_LABELS[category]}>
-                    {MODEL_GROUPS[category].map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
+                {categoryOrder.map((category) => {
+                  const options = groupedModels[category] ?? [];
+                  if (options.length === 0) {
+                    return null;
+                  }
+                  return (
+                    <optgroup key={category} label={MODEL_CATEGORY_LABELS[category]}>
+                      {options.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
               </select>
             </label>
             <p className="text-xs text-slate-400">{model.description}</p>
@@ -318,15 +671,77 @@ export const RealtimeConfigurator = () => {
             {renderSectionTitle('3. 入力音声', '音声認識の言語や語句ブーストを設定します。')}
             <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
               認識言語
-              <input
-                type="text"
-                value={formState.language}
-                onChange={handleLanguageChange}
-                disabled={!capabilityFlags.azureLanguage.enabled}
-                placeholder="ja-JP"
-                className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
-              />
+              <p className="mt-1 text-[11px] text-slate-400">{languageModeDescription}</p>
+              <div className="mt-2">
+                {isMultiLanguageMode ? (
+                  availableLanguages.length > 0 ? (
+                    <>
+                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <span>最大 {MAX_MULTI_LANGUAGE_SELECTION} 言語を選択</span>
+                        <span>
+                          {formState.multiLanguageSelections.length}
+                          /
+                          {MAX_MULTI_LANGUAGE_SELECTION}
+                        </span>
+                      </div>
+                      <div className="mt-2 grid max-h-56 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                        {availableLanguages.map((language) => {
+                          const checked = formState.multiLanguageSelections.includes(language.code);
+                          const disableSelection =
+                            !capabilityFlags.azureLanguage.enabled
+                            || (!checked
+                              && formState.multiLanguageSelections.length >= MAX_MULTI_LANGUAGE_SELECTION);
+                          return (
+                            <label
+                              key={language.code}
+                              className={`flex items-start gap-2 rounded-xl border px-3 py-2 text-xs ${checked ? 'border-cyan-400/40 bg-cyan-500/10 text-cyan-100' : 'border-white/10 bg-slate-900/80 text-slate-100'} ${disableSelection && !checked ? 'opacity-50' : ''}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                disabled={disableSelection}
+                                onChange={handleMultiLanguageToggle(language.code)}
+                                className="mt-[2px] h-4 w-4 rounded border-slate-500 bg-slate-900 text-cyan-400 focus:ring-0"
+                              />
+                              <span>{language.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-slate-300">
+                      言語情報が利用できません
+                    </p>
+                  )
+                ) : (
+                  <select
+                    value={formState.language}
+                    onChange={handleLanguageChange}
+                    disabled={!capabilityFlags.azureLanguage.enabled || availableLanguages.length === 0}
+                    className="w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
+                  >
+                    {availableLanguages.length > 0 ? (
+                      availableLanguages.map((language) => (
+                        <option key={language.code || `auto-${language.label}`} value={language.code}>
+                          {language.label}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">言語情報が利用できません</option>
+                    )}
+                  </select>
+                )}
+              </div>
             </label>
+            {!isMultiLanguageMode && selectedLanguageOption?.note ? (
+              <p className="text-xs text-slate-400">{selectedLanguageOption.note}</p>
+            ) : null}
+            {isMultiLanguageMode && selectedMultiLanguageLabels.length > 0 ? (
+              <p className="text-xs text-slate-400">
+                選択中: {selectedMultiLanguageLabels.join('、')}
+              </p>
+            ) : null}
             {renderCapabilityReason(capabilityFlags.azureLanguage.enabled, capabilityFlags.azureLanguage.reason)}
 
             <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
@@ -341,6 +756,27 @@ export const RealtimeConfigurator = () => {
               />
             </label>
             {renderCapabilityReason(capabilityFlags.phraseList.enabled, capabilityFlags.phraseList.reason)}
+
+            {modelLanguageSupport.length > 0 ? (
+              <div className="rounded-xl border border-white/10 bg-slate-900/70 p-3 text-xs text-slate-200">
+                <p className="text-[11px] uppercase tracking-[0.25em] text-slate-400">モデル対応言語</p>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  自動検出: {allowsAutoDetect ? '利用可能' : '利用不可'} / 指定モード: {effectiveLanguageMode === 'multi' ? '複数指定' : '単一指定'}
+                </p>
+                <div className="mt-2 flex max-h-36 flex-wrap gap-2 overflow-y-auto pr-1">
+                  {modelLanguageSupport.slice(0, 40).map((language) => (
+                    <span
+                      key={`${language.code || 'auto'}-${language.label}`}
+                      className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[10px] text-slate-100"
+                    >
+                      {language.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500">モデル固有の対応言語情報は現在利用できません。</p>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -351,13 +787,18 @@ export const RealtimeConfigurator = () => {
                 <select
                   value={formState.azureVoiceId}
                   onChange={handleAzureVoiceChange}
+                  disabled={voiceOptions.length === 0}
                   className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
                 >
-                  {AZURE_VOICE_OPTIONS.map((voice) => (
-                    <option key={voice.id} value={voice.id}>
-                      {voice.displayName} · {voice.locale}
-                    </option>
-                  ))}
+                  {voiceOptions.length > 0 ? (
+                    voiceOptions.map((voice) => (
+                      <option key={voice.id} value={voice.id}>
+                        {voice.displayName} · {voice.locale}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">ボイス情報が利用できません</option>
+                  )}
                 </select>
               </label>
               {selectedAzureVoice ? (
@@ -392,17 +833,30 @@ export const RealtimeConfigurator = () => {
               <select
                 value={formState.avatarId}
                 onChange={handleAvatarChange}
+                disabled={avatarOptions.length === 0}
                 className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
               >
-                {AVATAR_OPTIONS.map((avatar) => (
-                  <option key={avatar.id} value={avatar.id}>
-                    {avatar.displayName}
-                  </option>
-                ))}
+                {avatarOptions.length > 0 ? (
+                  avatarOptions.map((avatar) => (
+                    <option key={avatar.id} value={avatar.id}>
+                      {avatar.displayName}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">アバター情報が利用できません</option>
+                )}
               </select>
             </label>
             {selectedAvatar ? (
               <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-xs text-slate-200">
+                {selectedAvatar.thumbnailUrl ? (
+                  <img
+                    src={selectedAvatar.thumbnailUrl}
+                    alt={`${selectedAvatar.displayName} thumbnail`}
+                    className="mb-3 h-44 w-full rounded-xl bg-slate-950/70 object-contain"
+                    loading="lazy"
+                  />
+                ) : null}
                 <p className="font-semibold text-white">{selectedAvatar.displayName}</p>
                 <p className="mt-2 leading-relaxed text-slate-300">{selectedAvatar.description}</p>
                 {selectedAvatar.recommendedUse ? (
@@ -505,8 +959,14 @@ export const RealtimeConfigurator = () => {
           <div className="rounded-2xl border border-cyan-400/40 bg-cyan-400/10 p-4 text-xs text-cyan-100">
             <p className="font-semibold text-cyan-200">接続メモ</p>
             <ul className="mt-2 space-y-1">
-              <li>• {requiresAgentId ? 'Agent ID を指定してバックエンドで代理接続します。' : 'バックエンドで選択モデルを直接指定します。'}</li>
-              <li>• 認識言語: {formState.language || '未設定'}</li>
+              <li>
+                •
+                {requiresAgentId
+                  ? ` Agent ID を指定してバックエンドで代理接続します${voiceLiveAgentId ? `（推奨 ID: ${voiceLiveAgentId}）` : ''}。`
+                  : ' バックエンドで選択モデルを直接指定します。'}
+              </li>
+              <li>• 認識モード: {languageModeLabel}</li>
+              <li>• 認識言語: {selectedLanguageOption?.label ?? (formState.language || '未設定')}</li>
             </ul>
           </div>
         </aside>
