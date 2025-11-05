@@ -110,33 +110,6 @@ jobs:
           set -euo pipefail
           az extension add --name containerapp --upgrade
 
-      - name: Configure frontend API URL secret
-        env:
-          CONTAINER_APP_ID: ${{ steps.deploy.outputs.frontendAppId }}
-          BACKEND_URL: ${{ vars.BACKEND_URL }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ -z "$CONTAINER_APP_ID" ]]; then
-            echo "::error::Failed to resolve frontend Container App resource ID from deployment outputs."
-            exit 1
-          fi
-
-          if [[ -z "$BACKEND_URL" ]]; then
-            echo "::error::BACKEND_URL repository variable is not set."
-            exit 1
-          fi
-
-          az containerapp secret set \
-            --ids "$CONTAINER_APP_ID" \
-            --secrets vite-api-url="$BACKEND_URL" \
-            --only-show-errors
-
-          az containerapp update \
-            --ids "$CONTAINER_APP_ID" \
-            --set-env-vars VITE_API_URL=secretref:vite-api-url \
-            --only-show-errors
-
       - name: Summarize deployment
         if: success()
         shell: bash

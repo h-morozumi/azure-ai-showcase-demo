@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1.7-labs
 FROM node:20-alpine AS builder
 
+ARG VITE_BACKEND_BASE_URL
+
 ENV PNPM_HOME=/pnpm
 ENV PATH="$PNPM_HOME:$PATH"
 
@@ -25,7 +27,8 @@ COPY apps/frontend/public apps/frontend/public
 
 WORKDIR /workspace/apps/frontend
 
-RUN pnpm build
+RUN if [ -n "${VITE_BACKEND_BASE_URL:-}" ]; then export VITE_BACKEND_BASE_URL; fi; \
+	pnpm build
 
 FROM nginx:1.27-alpine AS runner
 

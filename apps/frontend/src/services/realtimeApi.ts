@@ -67,9 +67,7 @@ export interface LanguageOptionsApiResponse {
 }
 
 const resolveBaseUrl = (): string => {
-  const rawBase = (import.meta.env.VITE_BACKEND_BASE_URL as string | undefined)
-    ?? (import.meta.env.VITE_API_URL as string | undefined)
-    ?? '';
+  const rawBase = (import.meta.env.VITE_BACKEND_BASE_URL as string | undefined) ?? '';
   if (!rawBase) {
     return '';
   }

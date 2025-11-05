@@ -83,6 +83,8 @@ jobs:
         with:
           context: .
           file: apps/frontend/Dockerfile
+          build-args: |
+            VITE_BACKEND_BASE_URL=${{ vars.BACKEND_URL }}
           push: true
           tags: |
             ${{ steps.meta.outputs.imageTag }}
@@ -95,26 +97,6 @@ jobs:
         run: |
           set -euo pipefail
           az extension add --name containerapp --upgrade
-
-      - name: Configure frontend API URL secret
-        env:
-          RESOURCE_GROUP_NAME: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
-          CONTAINER_APP_NAME: ${{ env.FRONTEND_CONTAINER_APP_NAME }}
-          BACKEND_URL: ${{ vars.BACKEND_URL }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [[ -z "$BACKEND_URL" ]]; then
-            echo "::error::BACKEND_URL repository variable is not set."
-            exit 1
-          fi
-
-          az containerapp secret set \
-            --name "$CONTAINER_APP_NAME" \
-            --resource-group "$RESOURCE_GROUP_NAME" \
-            --secrets vite-api-url="$BACKEND_URL" \
-            --only-show-errors
 
       - name: Update frontend Container App
         env:
@@ -138,7 +120,6 @@ jobs:
             --name "$CONTAINER_APP_NAME" \
             --resource-group "$RESOURCE_GROUP_NAME" \
             --image "$IMAGE_TAG" \
-            --set-env-vars VITE_API_URL=secretref:vite-api-url \
             --only-show-errors
 
       - name: Publish artifact summary
