@@ -14,6 +14,7 @@ class AvatarOption:
     provider: str
     display_name: str
     character: str
+    gender: str
     description: str
     style: Optional[str] = None
     recommended_use: Optional[str] = None
@@ -27,9 +28,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Harry (business)",
         character="harry",
+        gender="男性",
         description="Harry のビジネススタイルアバター。",
         style="business",
-        tags=["Azure"],
+    tags=["Azure", "Business"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/harry/harry-business-thumbnail.png",
     ),
     AvatarOption(
@@ -37,9 +39,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Harry (casual)",
         character="harry",
+        gender="男性",
         description="Harry のカジュアルスタイルアバター。",
         style="casual",
-        tags=["Azure"],
+    tags=["Azure", "Casual"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/harry/harry-casual-thumbnail.png",
     ),
     AvatarOption(
@@ -47,9 +50,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Harry (youthful)",
         character="harry",
+        gender="男性",
         description="Harry のヤングスタイルアバター。",
         style="youthful",
-        tags=["Azure"],
+    tags=["Azure", "Youthful"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/harry/harry-youthful-thumbnail.png",
     ),
     AvatarOption(
@@ -57,9 +61,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Jeff (business)",
         character="jeff",
+        gender="男性",
         description="Jeff のビジネススタイルアバター。",
         style="business",
-        tags=["Azure"],
+    tags=["Azure", "Business"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/jeff/jeff-business-thumbnail-bg.png",
     ),
     AvatarOption(
@@ -67,9 +72,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Jeff (formal)",
         character="jeff",
+        gender="男性",
         description="Jeff のフォーマルスタイルアバター。",
         style="formal",
-        tags=["Azure"],
+    tags=["Azure", "Formal"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/jeff/jeff-formal-thumbnail-bg.png",
     ),
     AvatarOption(
@@ -77,9 +83,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Lisa (casual-sitting)",
         character="lisa",
+        gender="女性",
         description="Lisa のカジュアル座りスタイルアバター。",
         style="casual-sitting",
-        tags=["Azure"],
+    tags=["Azure", "Casual", "Sitting"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/lisa/lisa-casual-sitting-thumbnail.png",
     ),
     AvatarOption(
@@ -87,9 +94,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Lori (casual)",
         character="lori",
+        gender="女性",
         description="Lori のカジュアルスタイルアバター。",
         style="casual",
-        tags=["Azure"],
+    tags=["Azure", "Casual"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/lori/lori-casual-thumbnail.png",
     ),
     AvatarOption(
@@ -97,9 +105,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Lori (graceful)",
         character="lori",
+        gender="女性",
         description="Lori の優雅なスタイルアバター。",
         style="graceful",
-        tags=["Azure"],
+    tags=["Azure", "Graceful"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/lori/lori-graceful-thumbnail.png",
     ),
     AvatarOption(
@@ -107,9 +116,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Lori (formal)",
         character="lori",
+        gender="女性",
         description="Lori のフォーマルスタイルアバター。",
         style="formal",
-        tags=["Azure"],
+    tags=["Azure", "Formal"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/lori/lori-formal-thumbnail.png",
     ),
     AvatarOption(
@@ -117,9 +127,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Max (business)",
         character="max",
+        gender="男性",
         description="Max のビジネススタイルアバター。",
         style="business",
-        tags=["Azure"],
+    tags=["Azure", "Business"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/max/max-business-thumbnail.png",
     ),
     AvatarOption(
@@ -127,9 +138,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Max (casual)",
         character="max",
+        gender="男性",
         description="Max のカジュアルスタイルアバター。",
         style="casual",
-        tags=["Azure"],
+    tags=["Azure", "Casual"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/max/max-casual-thumbnail.png",
     ),
     AvatarOption(
@@ -137,9 +149,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Max (formal)",
         character="max",
+        gender="男性",
         description="Max のフォーマルスタイルアバター。",
         style="formal",
-        tags=["Azure"],
+    tags=["Azure", "Formal"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/max/max-formal-thumbnail.png",
     ),
     AvatarOption(
@@ -147,9 +160,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Meg (formal)",
         character="meg",
+        gender="女性",
         description="Meg のフォーマルスタイルアバター。",
         style="formal",
-        tags=["Azure"],
+    tags=["Azure", "Formal"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/meg/meg-formal-thumbnail.png",
     ),
     AvatarOption(
@@ -157,9 +171,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Meg (casual)",
         character="meg",
+        gender="女性",
         description="Meg のカジュアルスタイルアバター。",
         style="casual",
-        tags=["Azure"],
+    tags=["Azure", "Casual"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/meg/meg-casual-thumbnail.png",
     ),
     AvatarOption(
@@ -167,9 +182,10 @@ AVATAR_OPTIONS: List[AvatarOption] = [
         provider="azure",
         display_name="Meg (business)",
         character="meg",
+        gender="女性",
         description="Meg のビジネススタイルアバター。",
         style="business",
-        tags=["Azure"],
+    tags=["Azure", "Business"],
         thumbnail_url="https://ai.azure.com/speechassetscache/avatar/meg/meg-business-thumbnail.png",
     ),
 ]

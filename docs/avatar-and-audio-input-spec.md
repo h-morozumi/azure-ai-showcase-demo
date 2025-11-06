@@ -13,30 +13,31 @@
 - **デフォルト値**: `.env` / `Settings.avatar_default_character` で管理（現在は `lisa-casual-sitting`）
 - **構成要素**:
   - `avatar_id`: UI/設定で利用するユニーク ID
+  - `gender`: フロントエンドのラベル表示に用いる性別（例: 男性 / 女性）
   - `character`: Speech SDK `AvatarConfig` の第 1 引数（キャラクター）
   - `style`: Speech SDK `AvatarConfig` の第 2 引数（スタイル）
   - `thumbnail_url`: UI で表示可能なサムネイル画像
-  - `provider`, `description`, `tags`: 付加情報
+  - `provider`, `description`, `tags`: 付加情報（`tags` は `Azure` などの提供元と `Business` / `Casual` などのスタイルを含む）
 
 ### 1.2 利用可能なアバター一覧
 
-| avatar_id            | character | style          | display_name          | thumbnail_url                                                                 | 備考 |
-|----------------------|-----------|----------------|-----------------------|-------------------------------------------------------------------------------|------|
-| `harry-business`     | `harry`   | `business`     | Harry (business)      | <https://ai.azure.com/speechassetscache/avatar/harry/harry-business-thumbnail.png> |      |
-| `harry-casual`       | `harry`   | `casual`       | Harry (casual)        | <https://ai.azure.com/speechassetscache/avatar/harry/harry-casual-thumbnail.png>   |      |
-| `harry-youthful`     | `harry`   | `youthful`     | Harry (youthful)      | <https://ai.azure.com/speechassetscache/avatar/harry/harry-youthful-thumbnail.png> |      |
-| `jeff-business`      | `jeff`    | `business`     | Jeff (business)       | <https://ai.azure.com/speechassetscache/avatar/jeff/jeff-business-thumbnail.png>   |      |
-| `jeff-formal`        | `jeff`    | `formal`       | Jeff (formal)         | <https://ai.azure.com/speechassetscache/avatar/jeff/jeff-formal-thumbnail.png>     |      |
-| `lisa-casual-sitting`| `lisa`    | `casual-sitting` | Lisa (casual-sitting) | <https://ai.azure.com/speechassetscache/avatar/lisa/lisa-casual-sitting-thumbnail.png> | 既定 |
-| `lori-casual`        | `lori`    | `casual`       | Lori (casual)         | <https://ai.azure.com/speechassetscache/avatar/lori/lori-casual-thumbnail.png>     |      |
-| `lori-graceful`      | `lori`    | `graceful`     | Lori (graceful)       | <https://ai.azure.com/speechassetscache/avatar/lori/lori-graceful-thumbnail.png>   |      |
-| `lori-formal`        | `lori`    | `formal`       | Lori (formal)         | <https://ai.azure.com/speechassetscache/avatar/lori/lori-formal-thumbnail.png>     |      |
-| `max-business`       | `max`     | `business`     | Max (business)        | <https://ai.azure.com/speechassetscache/avatar/max/max-business-thumbnail.png>     |      |
-| `max-casual`         | `max`     | `casual`       | Max (casual)          | <https://ai.azure.com/speechassetscache/avatar/max/max-casual-thumbnail.png>       |      |
-| `max-formal`         | `max`     | `formal`       | Max (formal)          | <https://ai.azure.com/speechassetscache/avatar/max/max-formal-thumbnail.png>       |      |
-| `meg-formal`         | `meg`     | `formal`       | Meg (formal)          | <https://ai.azure.com/speechassetscache/avatar/meg/meg-formal-thumbnail.png>       |      |
-| `meg-casual`         | `meg`     | `casual`       | Meg (casual)          | <https://ai.azure.com/speechassetscache/avatar/meg/meg-casual-thumbnail.png>       |      |
-| `meg-business`       | `meg`     | `business`     | Meg (business)        | <https://ai.azure.com/speechassetscache/avatar/meg/meg-business-thumbnail.png>     |      |
+| avatar_id            | character | style            | gender | display_name          | thumbnail_url                                                                 | tags                      | 備考 |
+| -------------------- | --------- | ---------------- | ------ | --------------------- | --------------------------------------------------------------------------- | ------------------------- | ---- |
+| `harry-business`     | `harry`   | `business`       | 男性   | Harry (business)      | <https://ai.azure.com/speechassetscache/avatar/harry/harry-business-thumbnail.png> | Azure, Business           |      |
+| `harry-casual`       | `harry`   | `casual`         | 男性   | Harry (casual)        | <https://ai.azure.com/speechassetscache/avatar/harry/harry-casual-thumbnail.png>   | Azure, Casual             |      |
+| `harry-youthful`     | `harry`   | `youthful`       | 男性   | Harry (youthful)      | <https://ai.azure.com/speechassetscache/avatar/harry/harry-youthful-thumbnail.png> | Azure, Youthful           |      |
+| `jeff-business`      | `jeff`    | `business`       | 男性   | Jeff (business)       | <https://ai.azure.com/speechassetscache/avatar/jeff/jeff-business-thumbnail.png>   | Azure, Business           |      |
+| `jeff-formal`        | `jeff`    | `formal`         | 男性   | Jeff (formal)         | <https://ai.azure.com/speechassetscache/avatar/jeff/jeff-formal-thumbnail.png>     | Azure, Formal             |      |
+| `lisa-casual-sitting`| `lisa`    | `casual-sitting` | 女性   | Lisa (casual-sitting) | <https://ai.azure.com/speechassetscache/avatar/lisa/lisa-casual-sitting-thumbnail.png> | Azure, Casual, Sitting | 既定 |
+| `lori-casual`        | `lori`    | `casual`         | 女性   | Lori (casual)         | <https://ai.azure.com/speechassetscache/avatar/lori/lori-casual-thumbnail.png>     | Azure, Casual             |      |
+| `lori-graceful`      | `lori`    | `graceful`       | 女性   | Lori (graceful)       | <https://ai.azure.com/speechassetscache/avatar/lori/lori-graceful-thumbnail.png>   | Azure, Graceful           |      |
+| `lori-formal`        | `lori`    | `formal`         | 女性   | Lori (formal)         | <https://ai.azure.com/speechassetscache/avatar/lori/lori-formal-thumbnail.png>     | Azure, Formal             |      |
+| `max-business`       | `max`     | `business`       | 男性   | Max (business)        | <https://ai.azure.com/speechassetscache/avatar/max/max-business-thumbnail.png>     | Azure, Business           |      |
+| `max-casual`         | `max`     | `casual`         | 男性   | Max (casual)          | <https://ai.azure.com/speechassetscache/avatar/max/max-casual-thumbnail.png>       | Azure, Casual             |      |
+| `max-formal`         | `max`     | `formal`         | 男性   | Max (formal)          | <https://ai.azure.com/speechassetscache/avatar/max/max-formal-thumbnail.png>       | Azure, Formal             |      |
+| `meg-formal`         | `meg`     | `formal`         | 女性   | Meg (formal)          | <https://ai.azure.com/speechassetscache/avatar/meg/meg-formal-thumbnail.png>       | Azure, Formal             |      |
+| `meg-casual`         | `meg`     | `casual`         | 女性   | Meg (casual)          | <https://ai.azure.com/speechassetscache/avatar/meg/meg-casual-thumbnail.png>       | Azure, Casual             |      |
+| `meg-business`       | `meg`     | `business`       | 女性   | Meg (business)        | <https://ai.azure.com/speechassetscache/avatar/meg/meg-business-thumbnail.png>     | Azure, Business           |      |
 
 > **実装メモ**: Speech SDK でアバターを指定する際は `new SpeechSDK.AvatarConfig(character, style)` を使用し、UI からは `avatar_id` をキーとして保存します。
 

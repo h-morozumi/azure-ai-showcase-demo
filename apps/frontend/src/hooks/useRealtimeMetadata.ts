@@ -108,6 +108,7 @@ const adaptAvatars = (response: AvatarOptionsApiResponse): AvatarOption[] =>
     provider: avatar.provider as AvatarProvider,
     displayName: avatar.display_name,
     character: avatar.character,
+    gender: avatar.gender,
     style: avatar.style ?? undefined,
     description: avatar.description,
     recommendedUse: avatar.recommended_use ?? undefined,

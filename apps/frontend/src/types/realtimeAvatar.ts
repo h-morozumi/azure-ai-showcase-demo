@@ -53,6 +53,7 @@ export interface AvatarOption {
   provider: AvatarProvider;
   displayName: string;
   character: string;
+  gender: string;
   style?: string;
   description: string;
   recommendedUse?: string;

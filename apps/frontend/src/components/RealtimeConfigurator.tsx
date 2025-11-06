@@ -315,6 +315,16 @@ export const RealtimeConfigurator = () => {
     [avatarOptions, formState.avatarId],
   );
 
+  const avatarGenderLabel = selectedAvatar?.gender ?? '';
+  const avatarTags = selectedAvatar?.tags ?? [];
+  const hasAvatarTags = avatarTags.length > 0;
+  const showAvatarMetaChips = Boolean(avatarGenderLabel) || hasAvatarTags;
+
+  const voiceTags = selectedAzureVoice?.tags ?? [];
+  const hasVoiceTags = voiceTags.length > 0;
+  const isPreviewVoice = voiceTags.includes('Preview');
+  const isTurboVoice = voiceTags.includes('Turbo');
+
   const effectiveLanguageMode = activeLanguageProfile?.selectionMode ?? fallbackLanguageMode;
 
   const allowsAutoDetect = activeLanguageProfile ? activeLanguageProfile.allowAutoDetect : true;
@@ -500,7 +510,7 @@ export const RealtimeConfigurator = () => {
       label: 'アバター',
       enabled: true,
       active: true,
-      status: selectedAvatar ? `${selectedAvatar.displayName} (${selectedAvatar.character})` : '未選択',
+  status: selectedAvatar ? `${selectedAvatar.displayName} / ${selectedAvatar.gender}` : '未選択',
     },
   ]), [
     capabilityFlags.eou.enabled,
@@ -793,7 +803,7 @@ export const RealtimeConfigurator = () => {
                   {voiceOptions.length > 0 ? (
                     voiceOptions.map((voice) => (
                       <option key={voice.id} value={voice.id}>
-                        {voice.displayName} · {voice.locale}
+                        {voice.displayName}
                       </option>
                     ))
                   ) : (
@@ -803,11 +813,33 @@ export const RealtimeConfigurator = () => {
               </label>
               {selectedAzureVoice ? (
                 <div className="rounded-xl border border-white/10 bg-slate-900/70 px-3 py-3 text-xs text-slate-200">
-                  <p>{selectedAzureVoice.description}</p>
-                  <p className="mt-2 text-[11px] text-slate-400">
-                    Locale: {selectedAzureVoice.locale}
-                    {selectedAzureVoice.tags && selectedAzureVoice.tags.length > 0 ? ` ・ ${selectedAzureVoice.tags.join(' / ')}` : ''}
-                  </p>
+                  <p className="text-sm font-semibold text-white">{selectedAzureVoice.displayName}</p>
+                  <p className="mt-2 leading-relaxed text-slate-200">{selectedAzureVoice.description}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-100">
+                      Locale: {selectedAzureVoice.locale}
+                    </span>
+                    {hasVoiceTags
+                      ? voiceTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-cyan-200"
+                        >
+                          {tag}
+                        </span>
+                      ))
+                      : null}
+                  </div>
+                  {isPreviewVoice ? (
+                    <p className="mt-3 text-[11px] text-amber-300">
+                      Preview のボイスは仕様変更や音質調整が入る可能性があります。
+                    </p>
+                  ) : null}
+                  {isTurboVoice ? (
+                    <p className="mt-1 text-[11px] text-cyan-300">
+                      Turbo タグ付きのボイスは低遅延応答向けに最適化されています。
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -828,7 +860,7 @@ export const RealtimeConfigurator = () => {
 
           <div className="space-y-4">
             {renderSectionTitle('5. アバター', '映像として表示するアバターキャラクターを選択します。')}
-            <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+              <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
               アバターキャラクター
               <select
                 value={formState.avatarId}
@@ -839,7 +871,7 @@ export const RealtimeConfigurator = () => {
                 {avatarOptions.length > 0 ? (
                   avatarOptions.map((avatar) => (
                     <option key={avatar.id} value={avatar.id}>
-                      {avatar.displayName}
+                        {avatar.displayName} · {avatar.gender}
                     </option>
                   ))
                 ) : (
@@ -857,14 +889,21 @@ export const RealtimeConfigurator = () => {
                     loading="lazy"
                   />
                 ) : null}
-                <p className="font-semibold text-white">{selectedAvatar.displayName}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-white">{selectedAvatar.displayName}</p>
+                </div>
                 <p className="mt-2 leading-relaxed text-slate-300">{selectedAvatar.description}</p>
                 {selectedAvatar.recommendedUse ? (
                   <p className="mt-3 text-[11px] text-slate-400">推奨用途: {selectedAvatar.recommendedUse}</p>
                 ) : null}
-                {selectedAvatar.tags && selectedAvatar.tags.length > 0 ? (
+                {showAvatarMetaChips ? (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {selectedAvatar.tags.map((tag) => (
+                    {avatarGenderLabel ? (
+                      <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-100">
+                        {avatarGenderLabel}
+                      </span>
+                    ) : null}
+                    {avatarTags.map((tag) => (
                       <span key={tag} className="inline-flex items-center rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-cyan-200">
                         {tag}
                       </span>

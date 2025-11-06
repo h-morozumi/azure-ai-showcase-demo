@@ -60,6 +60,7 @@ class AvatarOptionSchema(BaseModel):
     provider: str = Field(..., description="提供元")
     display_name: str = Field(..., description="表示名")
     character: str = Field(..., description="Voice Live で利用するキャラクター ID")
+    gender: str = Field(..., description="アバターの性別カテゴリ")
     description: str = Field(..., description="説明")
     style: Optional[str] = Field(default=None, description="スタイル分類")
     recommended_use: Optional[str] = Field(default=None, description="推奨用途")

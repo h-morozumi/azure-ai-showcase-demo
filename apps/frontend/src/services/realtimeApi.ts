@@ -32,6 +32,7 @@ export interface AvatarOptionsApiResponse {
     provider: string;
     display_name: string;
     character: string;
+    gender: string;
     description: string;
     style?: string | null;
     recommended_use?: string | null;
