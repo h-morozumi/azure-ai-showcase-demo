@@ -19,6 +19,7 @@ import {
   fetchAzureVoices,
   fetchAvatars,
   fetchLanguageOptions,
+  fetchOpenAiVoices,
   fetchRealtimeModels,
   type AvatarOptionsApiResponse,
   type LanguageOptionsApiResponse,
@@ -30,8 +31,10 @@ interface RealtimeMetadataState {
   models: ModelMetadata[];
   groupedModels: Record<ModelCategory, ModelMetadata[]>;
   defaultModelId: string;
-  voiceOptions: VoiceCharacterOption[];
-  defaultVoiceId: string;
+  azureVoiceOptions: VoiceCharacterOption[];
+  defaultAzureVoiceId: string;
+  openAiVoiceOptions: VoiceCharacterOption[];
+  defaultOpenAiVoiceId: string;
   avatarOptions: AvatarOption[];
   defaultAvatarId: string;
   languageOptions: LanguageOptionsState;
@@ -157,8 +160,10 @@ export const useRealtimeMetadata = () => {
       agent: [],
     },
     defaultModelId: DEFAULT_MODEL_FALLBACK,
-    voiceOptions: [],
-    defaultVoiceId: '',
+    azureVoiceOptions: [],
+    defaultAzureVoiceId: '',
+    openAiVoiceOptions: [],
+    defaultOpenAiVoiceId: '',
     avatarOptions: [],
     defaultAvatarId: '',
     languageOptions: INITIAL_LANGUAGE_OPTIONS,
@@ -173,9 +178,10 @@ export const useRealtimeMetadata = () => {
     const load = async () => {
       setLoading(true);
       try {
-        const [modelsResponse, voiceResponse, avatarResponse, languageResponse] = await Promise.all([
+        const [modelsResponse, azureVoiceResponse, openAiVoiceResponse, avatarResponse, languageResponse] = await Promise.all([
           fetchRealtimeModels(),
           fetchAzureVoices(),
+          fetchOpenAiVoices(),
           fetchAvatars(),
           fetchLanguageOptions(),
         ]);
@@ -185,7 +191,8 @@ export const useRealtimeMetadata = () => {
         }
 
         const models = adaptModels(modelsResponse);
-        const voiceOptions = adaptVoices(voiceResponse);
+        const azureVoices = adaptVoices(azureVoiceResponse);
+        const openAiVoices = adaptVoices(openAiVoiceResponse);
         const avatarOptions = adaptAvatars(avatarResponse);
         const languageOptions = adaptLanguages(languageResponse);
 
@@ -196,8 +203,10 @@ export const useRealtimeMetadata = () => {
           groupedModels,
           defaultModelId:
             modelsResponse.default_model_id || models[0]?.id || DEFAULT_MODEL_FALLBACK,
-          voiceOptions,
-          defaultVoiceId: voiceResponse.default_voice_id || voiceOptions[0]?.id || '',
+          azureVoiceOptions: azureVoices,
+          defaultAzureVoiceId: azureVoiceResponse.default_voice_id || azureVoices[0]?.id || '',
+          openAiVoiceOptions: openAiVoices,
+          defaultOpenAiVoiceId: openAiVoiceResponse.default_voice_id || openAiVoices[0]?.id || '',
           avatarOptions,
           defaultAvatarId: avatarResponse.default_avatar_id || avatarOptions[0]?.id || '',
           languageOptions,

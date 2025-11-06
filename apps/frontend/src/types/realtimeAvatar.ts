@@ -1,6 +1,6 @@
 export type ModelCategory = 'realtime' | 'multimodal' | 'agent';
 
-export type VoiceProvider = 'azure';
+export type VoiceProvider = 'azure' | 'openai';
 
 export interface CapabilityFlag {
   enabled: boolean;

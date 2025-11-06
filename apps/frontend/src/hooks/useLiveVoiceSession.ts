@@ -210,6 +210,33 @@ export const useLiveVoiceSession = () => {
     }
   }, []);
 
+  const handleFatalError = useCallback(
+    async (message: string) => {
+      const detail = message || 'セッションエラー';
+      appendLog('error', detail);
+      setError(detail);
+      streamingEnabledRef.current = false;
+
+      const ws = wsRef.current;
+      closingRef.current = true;
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        try {
+          ws.close(1011, 'server-error');
+        } catch (closeError) {
+          console.debug('websocket close error', closeError);
+        }
+      }
+      wsRef.current = null;
+
+      await cleanupAudioGraph();
+
+      setStatus('error');
+      statusRef.current = 'error';
+      closingRef.current = false;
+    },
+    [appendLog, cleanupAudioGraph],
+  );
+
   const stop = useCallback(async () => {
     if (closingRef.current) {
       return;
@@ -424,8 +451,7 @@ export const useLiveVoiceSession = () => {
                   break;
                 case 'session.error':
                   streamingEnabledRef.current = false;
-                  setError((parsed.message as string) ?? 'セッションエラー');
-                  appendLog('error', (parsed.message as string) ?? 'セッションエラー');
+                  void handleFatalError((parsed.message as string) ?? 'セッションエラー');
                   break;
                 default:
                   appendLog('warn', `未知のメッセージ: ${parsed.type as string}`);
@@ -444,16 +470,22 @@ export const useLiveVoiceSession = () => {
 
         ws.onerror = (evt) => {
           console.error('websocket error', evt);
+          if (statusRef.current === 'error') {
+            return;
+          }
           if (!closingRef.current) {
-            appendLog('error', 'WebSocket エラーが発生しました');
-            setError('WebSocket エラーが発生しました');
             streamingEnabledRef.current = false;
+            void handleFatalError('WebSocket エラーが発生しました');
           }
         };
 
         ws.onclose = (evt) => {
           wsRef.current = null;
           streamingEnabledRef.current = false;
+
+          if (statusRef.current === 'error') {
+            return;
+          }
 
           if (closingRef.current) {
             return;
@@ -487,7 +519,7 @@ export const useLiveVoiceSession = () => {
         closingRef.current = false;
       }
     },
-    [appendLog, cleanupAudioGraph, handleServerEvent, handleServerAudio, resetMetrics, stop, updateMetrics],
+    [appendLog, cleanupAudioGraph, handleFatalError, handleServerEvent, handleServerAudio, resetMetrics, stop, updateMetrics],
   );
 
   useEffect(() => {

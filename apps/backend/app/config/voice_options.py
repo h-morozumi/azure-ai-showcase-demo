@@ -1,9 +1,9 @@
-"""Azure ボイスのマスターデータ。"""
+"""音声キャラクターのマスターデータ。"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Any, List, Optional
 
 
 def _build_display_name(name: str, locale: str, preview: bool) -> str:
@@ -16,7 +16,7 @@ def _build_display_name(name: str, locale: str, preview: bool) -> str:
 def _build_tags(gender: str, preview: bool, turbo: bool) -> List[str]:
     """タグ情報を構築する。"""
 
-    tags = ["多言語対応", gender]
+    tags = ["Azure", "多言語対応", gender]
     if preview:
         tags.append("Preview")
     if turbo:
@@ -36,7 +36,28 @@ class VoiceOption:
     tags: Optional[List[str]] = None
 
 
-_VOICE_DEFINITIONS = [
+def _build_voice_option(entry: dict[str, Any]) -> VoiceOption:
+    """エントリ辞書から VoiceOption を生成する。"""
+
+    return VoiceOption(
+        voice_id=entry["voice_id"],
+        provider="azure",
+        display_name=_build_display_name(entry["name"], entry["locale"], entry["preview"]),
+        locale=entry["locale"],
+        description=entry["description"],
+        tags=_build_tags(entry["gender"], entry["preview"], entry["turbo"]),
+    )
+
+
+def _order_voice_options(options: List[VoiceOption]) -> List[VoiceOption]:
+    """正式版 (Preview 以外) を先頭に並べ替える。"""
+
+    stable = [voice for voice in options if "Preview" not in (voice.tags or [])]
+    preview = [voice for voice in options if "Preview" in (voice.tags or [])]
+    return [*stable, *preview]
+
+
+_AZURE_VOICE_DEFINITIONS = [
     {
         "voice_id": "en-US-AvaMultilingualNeural",
         "name": "Ava",
@@ -499,19 +520,103 @@ _VOICE_DEFINITIONS = [
 ]
 
 
-AZURE_VOICE_OPTIONS: List[VoiceOption] = [
+AZURE_VOICE_OPTIONS: List[VoiceOption] = _order_voice_options(
+    [_build_voice_option(entry) for entry in _AZURE_VOICE_DEFINITIONS],
+)
+
+OPENAI_VOICE_OPTIONS: List[VoiceOption] = [
     VoiceOption(
-        voice_id=entry["voice_id"],
-        provider="azure",
-        display_name=_build_display_name(entry["name"], entry["locale"], entry["preview"]),
-        locale=entry["locale"],
-        description=entry["description"],
-        tags=_build_tags(entry["gender"], entry["preview"], entry["turbo"]),
-    )
-    for entry in _VOICE_DEFINITIONS
+        voice_id="verse",
+        provider="openai",
+        display_name="Verse · en-US",
+        locale="en-US",
+        description="詩のようなリズムとメロディーを感じさせる、メロディアスでバランスの良いボイスです。",
+        tags=["OpenAI", "Melodic"],
+    ),
+    VoiceOption(
+        voice_id="alloy",
+        provider="openai",
+        display_name="Alloy · en-US",
+        locale="en-US",
+        description="合金のように複数の要素が調和した、落ち着きと安定感のある声質です。",
+        tags=["OpenAI", "Stable"],
+    ),
+    VoiceOption(
+        voice_id="ash",
+        provider="openai",
+        display_name="Ash · en-US",
+        locale="en-US",
+        description="灰やトネリコの木を連想させる、クールで控えめな落ち着いた響きのボイスです。",
+        tags=["OpenAI", "Cool"],
+    ),
+    VoiceOption(
+        voice_id="ballad",
+        provider="openai",
+        display_name="Ballad · en-US",
+        locale="en-US",
+        description="物語を紡ぐバラードのように、優しく感情豊かに語りかける声質です。",
+        tags=["OpenAI", "Emotional"],
+    ),
+    VoiceOption(
+        voice_id="coral",
+        provider="openai",
+        display_name="Coral · en-US",
+        locale="en-US",
+        description="珊瑚を思わせる柔らかさと温かみを備え、親しみやすさを感じさせるボイスです。",
+        tags=["OpenAI", "Warm"],
+    ),
+    VoiceOption(
+        voice_id="echo",
+        provider="openai",
+        display_name="Echo · en-US",
+        locale="en-US",
+        description="こだまの反響を思わせる透明感があり、機械的で幻想的な響きを持つ声です。",
+        tags=["OpenAI", "Ethereal"],
+    ),
+    VoiceOption(
+        voice_id="fable",
+        provider="openai",
+        display_name="Fable · en-US",
+        locale="en-US",
+        description="寓話の語り手のように温かく包み込む、安心感のあるナラティブなボイスです。",
+        tags=["OpenAI", "Storytelling"],
+    ),
+    VoiceOption(
+        voice_id="onyx",
+        provider="openai",
+        display_name="Onyx · en-US",
+        locale="en-US",
+        description="黒曜石のように力強く、重厚な低音で存在感を放つ声質です。",
+        tags=["OpenAI", "Deep"],
+    ),
+    VoiceOption(
+        voice_id="nova",
+        provider="openai",
+        display_name="Nova · en-US",
+        locale="en-US",
+        description="新星の爆発のように明るくエネルギッシュで、勢いのあるボイスです。",
+        tags=["OpenAI", "Energetic"],
+    ),
+    VoiceOption(
+        voice_id="sage",
+        provider="openai",
+        display_name="Sage · en-US",
+        locale="en-US",
+        description="賢者を思わせる知性と落ち着きが漂い、柔らかな女性らしさも感じられる声です。",
+        tags=["OpenAI", "Wise"],
+    ),
+    VoiceOption(
+        voice_id="shimmer",
+        provider="openai",
+        display_name="Shimmer · en-US",
+        locale="en-US",
+        description="きらめきや輝きを想起させる、軽やかで明るいトーンが特徴のボイスです。",
+        tags=["OpenAI", "Bright"],
+    ),
 ]
 
 DEFAULT_AZURE_VOICE_ID = "en-US-AvaMultilingualNeural"
+DEFAULT_OPENAI_VOICE_ID = "verse"
 
 
 def list_azure_voices() -> List[VoiceOption]:
@@ -526,3 +631,17 @@ def get_default_azure_voice_id() -> str:
     if any(voice.voice_id == DEFAULT_AZURE_VOICE_ID for voice in AZURE_VOICE_OPTIONS):
         return DEFAULT_AZURE_VOICE_ID
     return AZURE_VOICE_OPTIONS[0].voice_id if AZURE_VOICE_OPTIONS else ""
+
+
+def list_openai_voices() -> List[VoiceOption]:
+    """OpenAI ボイス一覧を返却する。"""
+
+    return OPENAI_VOICE_OPTIONS
+
+
+def get_default_openai_voice_id() -> str:
+    """OpenAI ボイスの既定 ID を取得する。"""
+
+    if any(voice.voice_id == DEFAULT_OPENAI_VOICE_ID for voice in OPENAI_VOICE_OPTIONS):
+        return DEFAULT_OPENAI_VOICE_ID
+    return OPENAI_VOICE_OPTIONS[0].voice_id if OPENAI_VOICE_OPTIONS else ""

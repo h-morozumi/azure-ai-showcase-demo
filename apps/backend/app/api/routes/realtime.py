@@ -24,7 +24,9 @@ from app.config.language_options import (
 )
 from app.config.voice_options import (
     get_default_azure_voice_id,
+    get_default_openai_voice_id,
     list_azure_voices,
+    list_openai_voices,
 )
 from app.core.config import Settings
 from app.schemas.realtime import (
@@ -115,6 +117,21 @@ async def list_azure_voice_options() -> VoiceOptionsResponse:
     default_voice_id = get_default_azure_voice_id() if voices else ""
 
     return VoiceOptionsResponse(provider="azure", default_voice_id=default_voice_id, voices=voices)
+
+
+@router.get(
+    "/voices/openai",
+    response_model=VoiceOptionsResponse,
+    summary="OpenAI ボイス一覧を取得",
+    dependencies=[Depends(verify_api_key)],
+)
+async def list_openai_voice_options() -> VoiceOptionsResponse:
+    """OpenAI ボイスのメタデータを返す。"""
+
+    voices = [VoiceOptionSchema.from_dataclass(voice) for voice in list_openai_voices()]
+    default_voice_id = get_default_openai_voice_id() if voices else ""
+
+    return VoiceOptionsResponse(provider="openai", default_voice_id=default_voice_id, voices=voices)
 
 
 @router.get(
@@ -346,7 +363,7 @@ def _build_session_config(payload: LiveVoiceSessionConfigPayload, settings: Sett
 
     return LiveVoiceSessionConfig(
         model_id=payload.model_id,
-        voice_id=payload.voice_id or "alloy",
+        voice_id=payload.voice_id or "verse",
         instructions=payload.instructions,
         language=payload.language,
         phrase_list=phrase_list,

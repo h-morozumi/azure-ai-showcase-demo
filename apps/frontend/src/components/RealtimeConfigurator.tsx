@@ -69,7 +69,7 @@ interface FormState {
   multiLanguageSelections: string[];
   customSpeechEndpoint: string;
   agentId: string;
-  azureVoiceId: string;
+  voiceId: string;
   avatarId: string;
 }
 
@@ -82,8 +82,10 @@ export const RealtimeConfigurator = () => {
     models,
     groupedModels,
     defaultModelId,
-    voiceOptions,
-    defaultVoiceId,
+    azureVoiceOptions,
+    defaultAzureVoiceId,
+    openAiVoiceOptions,
+    defaultOpenAiVoiceId,
     avatarOptions,
     defaultAvatarId,
     languageOptions,
@@ -101,7 +103,7 @@ export const RealtimeConfigurator = () => {
     multiLanguageSelections: [],
     customSpeechEndpoint: '',
     agentId: '',
-    azureVoiceId: '',
+    voiceId: '',
     avatarId: '',
   }));
 
@@ -123,6 +125,60 @@ export const RealtimeConfigurator = () => {
   );
 
   const { model, capabilityFlags, requiresAgentId } = useRealtimeCapabilities(selectedModel);
+
+  const isRealtimeModel = model.category === 'realtime';
+
+  const voiceOptions = useMemo(() => {
+    if (isRealtimeModel) {
+      if (openAiVoiceOptions.length > 0) {
+        return openAiVoiceOptions;
+      }
+      return azureVoiceOptions;
+    }
+
+    if (azureVoiceOptions.length > 0) {
+      return azureVoiceOptions;
+    }
+
+    return openAiVoiceOptions;
+  }, [azureVoiceOptions, openAiVoiceOptions, isRealtimeModel]);
+
+  const defaultVoiceId = useMemo(() => {
+    if (isRealtimeModel) {
+      if (openAiVoiceOptions.length > 0) {
+        return defaultOpenAiVoiceId || openAiVoiceOptions[0]?.id || '';
+      }
+      return defaultAzureVoiceId || azureVoiceOptions[0]?.id || '';
+    }
+
+    if (azureVoiceOptions.length > 0) {
+      return defaultAzureVoiceId || azureVoiceOptions[0]?.id || '';
+    }
+
+    return defaultOpenAiVoiceId || openAiVoiceOptions[0]?.id || '';
+  }, [
+    azureVoiceOptions,
+    defaultAzureVoiceId,
+    defaultOpenAiVoiceId,
+    isRealtimeModel,
+    openAiVoiceOptions,
+  ]);
+
+  const voiceProviderLabel = useMemo(() => {
+    const provider = voiceOptions[0]?.provider;
+    if (provider === 'openai') {
+      return 'OpenAI ボイスキャラクター';
+    }
+    if (provider === 'azure') {
+      return 'Azure ボイスキャラクター';
+    }
+    return 'ボイスキャラクター';
+  }, [voiceOptions]);
+
+  const usingAzureVoiceFallback = useMemo(
+    () => isRealtimeModel && voiceOptions.length > 0 && voiceOptions[0].provider !== 'openai',
+    [isRealtimeModel, voiceOptions],
+  );
 
   const activeLanguageProfile = useMemo(
     () => languageOptions.realtimeModels.find((entry) => entry.modelId === model.id) ?? null,
@@ -174,8 +230,8 @@ export const RealtimeConfigurator = () => {
         changed = true;
       }
 
-      if (voiceOptions.length > 0 && !voiceOptions.some((voice) => voice.id === prev.azureVoiceId)) {
-        next.azureVoiceId = defaultVoiceId || voiceOptions[0].id;
+      if (voiceOptions.length > 0 && !voiceOptions.some((voice) => voice.id === prev.voiceId)) {
+        next.voiceId = defaultVoiceId || voiceOptions[0].id;
         changed = true;
       }
 
@@ -184,11 +240,11 @@ export const RealtimeConfigurator = () => {
         changed = true;
       }
 
-    const profile = activeLanguageProfile;
-    const selectionMode = profile?.selectionMode ?? fallbackLanguageMode;
+      const profile = activeLanguageProfile;
+      const selectionMode = profile?.selectionMode ?? fallbackLanguageMode;
 
-    const rawLanguages = profile ? profile.languages : languageOptions.languages;
-    const allowAutoDetect = profile ? profile.allowAutoDetect : true;
+      const rawLanguages = profile ? profile.languages : languageOptions.languages;
+      const allowAutoDetect = profile ? profile.allowAutoDetect : true;
 
       const selectableForMulti = rawLanguages.filter((item) => item.code);
       const selectableForSingle = allowAutoDetect ? rawLanguages : rawLanguages.filter((item) => item.code);
@@ -354,9 +410,9 @@ export const RealtimeConfigurator = () => {
     }
   };
 
-  const handleAzureVoiceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleVoiceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const { value } = event.target;
-    setFormState((prev) => ({ ...prev, azureVoiceId: value }));
+    setFormState((prev) => ({ ...prev, voiceId: value }));
     if (sessionConfigError === '利用可能なボイスがありません。') {
       setSessionConfigError(null);
     }
@@ -415,9 +471,9 @@ export const RealtimeConfigurator = () => {
     void stopLiveSession();
   };
 
-  const selectedAzureVoice = useMemo(
-    () => findVoiceById(voiceOptions, formState.azureVoiceId),
-    [voiceOptions, formState.azureVoiceId],
+  const selectedVoice = useMemo(
+    () => findVoiceById(voiceOptions, formState.voiceId),
+    [voiceOptions, formState.voiceId],
   );
 
   const selectedAvatar = useMemo(
@@ -430,15 +486,15 @@ export const RealtimeConfigurator = () => {
   const hasAvatarTags = avatarTags.length > 0;
   const showAvatarMetaChips = Boolean(avatarGenderLabel) || hasAvatarTags;
 
-  const voiceTags = selectedAzureVoice?.tags ?? [];
+  const voiceTags = selectedVoice?.tags ?? [];
   const hasVoiceTags = voiceTags.length > 0;
   const isPreviewVoice = voiceTags.includes('Preview');
   const isTurboVoice = voiceTags.includes('Turbo');
 
   const voiceCandidate = useMemo(() => {
     const fallback = defaultVoiceId || voiceOptions[0]?.id || '';
-    return formState.azureVoiceId || fallback;
-  }, [defaultVoiceId, formState.azureVoiceId, voiceOptions]);
+    return formState.voiceId || fallback;
+  }, [defaultVoiceId, formState.voiceId, voiceOptions]);
 
   const missingAgentId = useMemo(
     () => requiresAgentId && formState.agentId.trim().length === 0,
@@ -639,15 +695,15 @@ export const RealtimeConfigurator = () => {
       label: '音声キャラクター',
       enabled: true,
       active: true,
-      status: selectedAzureVoice
-        ? `${selectedAzureVoice.displayName} · ${selectedAzureVoice.locale}`
+      status: selectedVoice
+        ? `${selectedVoice.displayName} · ${selectedVoice.locale} · ${selectedVoice.provider === 'openai' ? 'OpenAI' : 'Azure'}`
         : '未選択',
     },
     {
       label: 'アバター',
       enabled: true,
       active: true,
-  status: selectedAvatar ? `${selectedAvatar.displayName} / ${selectedAvatar.gender}` : '未選択',
+      status: selectedAvatar ? `${selectedAvatar.displayName} / ${selectedAvatar.gender}` : '未選択',
     },
   ]), [
     capabilityFlags.eou.enabled,
@@ -669,7 +725,7 @@ export const RealtimeConfigurator = () => {
     capabilityFlags.customSpeech.enabled,
     capabilityFlags.customSpeech.reason,
     formState.customSpeechEndpoint,
-    selectedAzureVoice,
+    selectedVoice,
     selectedAvatar,
   ]);
 
@@ -930,10 +986,10 @@ export const RealtimeConfigurator = () => {
             {renderSectionTitle('4. 出力音声', '使用するボイスと音響設定を切り替えます。')}
             <div className="space-y-2">
               <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                Azure ボイスキャラクター
+                {voiceProviderLabel}
                 <select
-                  value={formState.azureVoiceId}
-                  onChange={handleAzureVoiceChange}
+                  value={formState.voiceId}
+                  onChange={handleVoiceChange}
                   disabled={voiceOptions.length === 0}
                   className="mt-2 w-full rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-cyan-400 focus:outline-none"
                 >
@@ -948,13 +1004,21 @@ export const RealtimeConfigurator = () => {
                   )}
                 </select>
               </label>
-              {selectedAzureVoice ? (
+              {usingAzureVoiceFallback ? (
+                <p className="text-[11px] text-amber-300">
+                  GPT Realtime モデルでは OpenAI ボイスが推奨されます。現在は Azure ボイスを暫定利用中です。
+                </p>
+              ) : null}
+              {selectedVoice ? (
                 <div className="rounded-xl border border-white/10 bg-slate-900/70 px-3 py-3 text-xs text-slate-200">
-                  <p className="text-sm font-semibold text-white">{selectedAzureVoice.displayName}</p>
-                  <p className="mt-2 leading-relaxed text-slate-200">{selectedAzureVoice.description}</p>
+                  <p className="text-sm font-semibold text-white">{selectedVoice.displayName}</p>
+                  <p className="mt-2 leading-relaxed text-slate-200">{selectedVoice.description}</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-100">
-                      Locale: {selectedAzureVoice.locale}
+                      Locale: {selectedVoice.locale}
+                    </span>
+                    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-100">
+                      Provider: {selectedVoice.provider === 'openai' ? 'OpenAI' : 'Azure'}
                     </span>
                     {hasVoiceTags
                       ? voiceTags.map((tag) => (

@@ -68,6 +68,7 @@ AZURE_SPEECH_LANGUAGES: List[LanguageOption] = [
 
 
 GPT_REALTIME_LANGUAGES: List[LanguageOption] = [
+    LanguageOption(code="ja", label="日本語"),
     LanguageOption(code="af", label="アフリカーンス語"),
     LanguageOption(code="ar", label="アラビア語"),
     LanguageOption(code="hy", label="アルメニア語"),
@@ -94,7 +95,6 @@ GPT_REALTIME_LANGUAGES: List[LanguageOption] = [
     LanguageOption(code="is", label="アイスランド語"),
     LanguageOption(code="id", label="インドネシア語"),
     LanguageOption(code="it", label="イタリア語"),
-    LanguageOption(code="ja", label="日本語"),
     LanguageOption(code="kn", label="カンナダ語"),
     LanguageOption(code="kk", label="カザフ語"),
     LanguageOption(code="ko", label="韓国語"),
@@ -129,12 +129,12 @@ GPT_REALTIME_LANGUAGES: List[LanguageOption] = [
 
 
 PHI4_MM_LANGUAGES: List[LanguageOption] = [
+    LanguageOption(code="ja", label="日本語"),
     LanguageOption(code="zh", label="中国語"),
     LanguageOption(code="en", label="英語"),
     LanguageOption(code="fr", label="フランス語"),
     LanguageOption(code="de", label="ドイツ語"),
     LanguageOption(code="it", label="イタリア語"),
-    LanguageOption(code="ja", label="日本語"),
     LanguageOption(code="pt", label="ポルトガル語"),
     LanguageOption(code="es", label="スペイン語"),
 ]

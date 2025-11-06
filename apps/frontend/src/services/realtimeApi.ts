@@ -13,11 +13,11 @@ export interface RealtimeModelsApiResponse {
 }
 
 export interface VoiceOptionsApiResponse {
-  provider: string;
+  provider: 'azure' | 'openai';
   default_voice_id: string;
   voices: Array<{
     voice_id: string;
-    provider: string;
+    provider: 'azure' | 'openai';
     display_name: string;
     locale: string;
     description: string;
@@ -131,6 +131,9 @@ export const fetchRealtimeModels = async (): Promise<RealtimeModelsApiResponse> 
 
 export const fetchAzureVoices = async (): Promise<VoiceOptionsApiResponse> =>
   request<VoiceOptionsApiResponse>('/api/v1/realtime/voices/azure');
+
+export const fetchOpenAiVoices = async (): Promise<VoiceOptionsApiResponse> =>
+  request<VoiceOptionsApiResponse>('/api/v1/realtime/voices/openai');
 
 export const fetchAvatars = async (): Promise<AvatarOptionsApiResponse> =>
   request<AvatarOptionsApiResponse>('/api/v1/realtime/avatars');
