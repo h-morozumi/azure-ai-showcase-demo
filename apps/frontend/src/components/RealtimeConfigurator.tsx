@@ -1,10 +1,54 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useLiveVoiceSession } from '../hooks/useLiveVoiceSession';
 import { useRealtimeCapabilities } from '../hooks/useRealtimeCapabilities';
 import { useRealtimeMetadata } from '../hooks/useRealtimeMetadata';
+import type { LiveVoiceSessionStatus } from '../hooks/useLiveVoiceSession';
 import type { ModelCategory, ModelMetadata } from '../types/realtimeAvatar';
 import { MODEL_CATEGORY_LABELS } from '../utils/realtimeModelConfigs';
 import { findVoiceById } from '../utils/voiceOptions';
 import { findAvatarById } from '../utils/avatarOptions';
+
+const SESSION_STATUS_LABEL: Record<LiveVoiceSessionStatus, string> = {
+  idle: '待機',
+  connecting: '接続中',
+  ready: '稼働中',
+  stopping: '停止処理',
+  error: 'エラー',
+};
+
+const SESSION_STATUS_CLASS: Record<LiveVoiceSessionStatus, string> = {
+  idle: 'border border-slate-400/30 bg-slate-800/60 text-slate-200',
+  connecting: 'border border-amber-400/40 bg-amber-500/15 text-amber-200',
+  ready: 'border border-emerald-400/50 bg-emerald-500/15 text-emerald-200',
+  stopping: 'border border-slate-400/40 bg-slate-700/40 text-slate-200',
+  error: 'border border-rose-400/50 bg-rose-500/15 text-rose-200',
+};
+
+const formatBytes = (value: number): string => {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '0 B';
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let result = value;
+  let unitIndex = 0;
+
+  while (result >= 1024 && unitIndex < units.length - 1) {
+    result /= 1024;
+    unitIndex += 1;
+  }
+
+  const precision = unitIndex === 0 ? 0 : 1;
+  return `${result.toFixed(precision)} ${units[unitIndex]}`;
+};
+
+const formatTimestamp = (value: number): string =>
+  new Date(value).toLocaleTimeString('ja-JP', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
 
 type SemanticVadMode = 'azure_semantic_vad' | 'semantic_vad';
 
@@ -60,6 +104,18 @@ export const RealtimeConfigurator = () => {
     azureVoiceId: '',
     avatarId: '',
   }));
+
+  const {
+    status: sessionStatus,
+    error: sessionError,
+    logs: sessionLogs,
+    metrics: sessionMetrics,
+    start: startLiveSession,
+    stop: stopLiveSession,
+    isStreaming,
+  } = useLiveVoiceSession();
+
+  const [sessionConfigError, setSessionConfigError] = useState<string | null>(null);
 
   const selectedModel = useMemo<ModelMetadata | undefined>(
     () => models.find((candidate) => candidate.id === selectedModelId) ?? models[0],
@@ -293,16 +349,70 @@ export const RealtimeConfigurator = () => {
   const handleAgentIdChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target;
     setFormState((prev) => ({ ...prev, agentId: value }));
+    if (sessionConfigError === 'Agent ID を入力してください。') {
+      setSessionConfigError(null);
+    }
   };
 
   const handleAzureVoiceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const { value } = event.target;
     setFormState((prev) => ({ ...prev, azureVoiceId: value }));
+    if (sessionConfigError === '利用可能なボイスがありません。') {
+      setSessionConfigError(null);
+    }
   };
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const { value } = event.target;
     setFormState((prev) => ({ ...prev, avatarId: value }));
+  };
+
+  const handleStartSession = () => {
+    if (sessionStatus === 'connecting' || sessionStatus === 'ready') {
+      return;
+    }
+
+    if (missingAgentId) {
+      setSessionConfigError('Agent ID を入力してください。');
+      return;
+    }
+
+    if (!voiceCandidate) {
+      setSessionConfigError('利用可能なボイスがありません。');
+      return;
+    }
+
+    const instructions = formState.instructions.trim();
+    const agentIdValue = formState.agentId.trim();
+    const customSpeechValue = formState.customSpeechEndpoint.trim();
+
+    const phraseListEntries = formState.phraseList
+      .split(/[,\r\n]/)
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0);
+
+    setSessionConfigError(null);
+
+    void startLiveSession({
+      modelId: model.id,
+      voiceId: voiceCandidate,
+      instructions: instructions.length > 0 ? instructions : undefined,
+      language: formState.language ? formState.language : undefined,
+      phraseList: phraseListEntries,
+      semanticVad: formState.semanticVad,
+      enableEou: formState.enableEou,
+      agentId: agentIdValue.length > 0 ? agentIdValue : undefined,
+      customSpeechEndpoint: customSpeechValue.length > 0 ? customSpeechValue : undefined,
+      avatarId: formState.avatarId || undefined,
+    });
+  };
+
+  const handleStopSession = () => {
+    if (sessionStatus === 'idle') {
+      return;
+    }
+    setSessionConfigError(null);
+    void stopLiveSession();
   };
 
   const selectedAzureVoice = useMemo(
@@ -324,6 +434,33 @@ export const RealtimeConfigurator = () => {
   const hasVoiceTags = voiceTags.length > 0;
   const isPreviewVoice = voiceTags.includes('Preview');
   const isTurboVoice = voiceTags.includes('Turbo');
+
+  const voiceCandidate = useMemo(() => {
+    const fallback = defaultVoiceId || voiceOptions[0]?.id || '';
+    return formState.azureVoiceId || fallback;
+  }, [defaultVoiceId, formState.azureVoiceId, voiceOptions]);
+
+  const missingAgentId = useMemo(
+    () => requiresAgentId && formState.agentId.trim().length === 0,
+    [requiresAgentId, formState.agentId],
+  );
+
+  const sessionStatusLabel = SESSION_STATUS_LABEL[sessionStatus];
+  const sessionStatusClass = SESSION_STATUS_CLASS[sessionStatus];
+  const startDisabled = sessionStatus === 'connecting' || sessionStatus === 'ready' || missingAgentId;
+  const stopDisabled = sessionStatus === 'idle' || sessionStatus === 'stopping';
+  const sessionLogsToRender = useMemo(() => sessionLogs.slice(-20), [sessionLogs]);
+  const aggregatedSessionError = sessionConfigError ?? sessionError ?? null;
+
+  const resolveLogLevelClass = (level: string): string => {
+    if (level === 'error') {
+      return 'bg-rose-500/20 text-rose-200';
+    }
+    if (level === 'warn') {
+      return 'bg-amber-500/20 text-amber-200';
+    }
+    return 'bg-slate-700/60 text-slate-200';
+  };
 
   const effectiveLanguageMode = activeLanguageProfile?.selectionMode ?? fallbackLanguageMode;
 
@@ -938,10 +1075,18 @@ export const RealtimeConfigurator = () => {
                   <p className="text-xs text-slate-400">アバター: {selectedAvatar.displayName}</p>
                 ) : null}
               </div>
-              <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/70 px-3 py-1 text-xs text-slate-300">
-                <span className={`h-2 w-2 rounded-full ${formState.enableEou ? 'bg-emerald-400' : 'bg-slate-500'}`} aria-hidden="true" />
-                {formState.enableEou ? 'EOU: ON' : 'EOU: OFF'}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${sessionStatusClass}`}
+                >
+                  <span className="h-2 w-2 rounded-full bg-white/80" aria-hidden="true" />
+                  {sessionStatusLabel}
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-slate-900/70 px-3 py-1 text-xs text-slate-300">
+                  <span className={`h-2 w-2 rounded-full ${formState.enableEou ? 'bg-emerald-400' : 'bg-slate-500'}`} aria-hidden="true" />
+                  {formState.enableEou ? 'EOU: ON' : 'EOU: OFF'}
+                </span>
+              </div>
             </div>
             <div className="mt-6 aspect-video w-full rounded-2xl border border-dashed border-cyan-400/40 bg-slate-950/50" aria-label="アバター映像プレビュー">
               <div className="flex h-full items-center justify-center text-sm text-slate-500">
@@ -953,22 +1098,77 @@ export const RealtimeConfigurator = () => {
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
-                className="rounded-full bg-gradient-to-r from-cyan-400 via-sky-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-cyan-500/30 transition hover:scale-[1.01] hover:shadow-lg"
+                onClick={handleStartSession}
+                disabled={startDisabled}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  startDisabled
+                    ? 'cursor-not-allowed border border-white/15 bg-white/10 text-white/60'
+                    : 'bg-gradient-to-r from-cyan-400 via-sky-500 to-indigo-500 text-white shadow-cyan-500/30 hover:scale-[1.01] hover:shadow-lg'
+                }`}
               >
                 会話開始
               </button>
               <button
                 type="button"
-                className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+                onClick={handleStopSession}
+                disabled={stopDisabled}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  stopDisabled
+                    ? 'cursor-not-allowed border border-white/15 bg-white/10 text-white/60'
+                    : 'border border-white/20 bg-white/10 text-white hover:bg-white/20'
+                }`}
               >
                 会話終了
               </button>
             </div>
-            <div className="mt-6 rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-sm text-slate-200">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">リアルタイム字幕</p>
-              <div className="mt-3 space-y-2">
-                <div className="rounded-xl bg-slate-950/70 px-3 py-2 text-slate-100">ユーザー: （マイク入力待機中）</div>
-                <div className="rounded-xl bg-cyan-500/10 px-3 py-2 text-cyan-100">アバター: 応答がここにストリーミングされます。</div>
+            {missingAgentId ? (
+              <p className="mt-2 text-xs text-amber-300">Agent ID を入力すると接続できます。</p>
+            ) : null}
+            {aggregatedSessionError ? (
+              <p className="mt-3 rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-2 text-xs text-rose-100">
+                {aggregatedSessionError}
+              </p>
+            ) : null}
+            <div className="mt-6 grid gap-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-xs text-slate-200 sm:grid-cols-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">ストリーム状態</p>
+                <p className={`mt-1 text-sm font-semibold ${isStreaming ? 'text-emerald-200' : 'text-slate-200'}`}>
+                  {isStreaming ? '音声ストリーミング中' : 'マイク待機中'}
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">送信音声</p>
+                <p className="mt-1 text-sm font-semibold text-white">{formatBytes(sessionMetrics.sentAudioBytes)}</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">受信音声</p>
+                <p className="mt-1 text-sm font-semibold text-white">{formatBytes(sessionMetrics.receivedAudioBytes)}</p>
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">レスポンス</p>
+                <p className="mt-1 text-sm font-semibold text-white">{sessionMetrics.responseCount}</p>
+              </div>
+            </div>
+            <div className="mt-6">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">イベントログ</p>
+              <div className="mt-3 max-h-48 overflow-y-auto rounded-2xl border border-white/10 bg-slate-900/70">
+                <ul className="divide-y divide-white/5">
+                  {sessionLogsToRender.length > 0 ? (
+                    sessionLogsToRender.map((entry, index) => (
+                      <li key={`${entry.timestamp}-${index}`} className="flex flex-col gap-1 px-3 py-2 text-xs text-slate-200">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${resolveLogLevelClass(entry.level)}`}>
+                            {entry.level.toUpperCase()}
+                          </span>
+                          <span className="text-[11px] text-slate-400">{formatTimestamp(entry.timestamp)}</span>
+                        </div>
+                        <p className="text-slate-100">{entry.message}</p>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-3 py-4 text-xs text-slate-400">ログはまだありません。</li>
+                  )}
+                </ul>
               </div>
             </div>
           </div>

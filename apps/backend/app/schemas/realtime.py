@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import List, Literal, Optional
+from typing import Annotated, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -163,3 +163,39 @@ class LanguageOptionsResponse(BaseModel):
 
     azure_speech: AzureSpeechLanguagesResponse = Field(..., description="Azure Speech 入力音声設定")
     realtime_models: List[ModelLanguageSupportSchema] = Field(..., description="Realtime モデル個別の言語サポート")
+
+
+class LiveVoiceSessionConfigPayload(BaseModel):
+    """WebSocket 経由で受け取るセッション構成。"""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    model_id: str = Field(..., alias="modelId", description="Live Voice モデル ID")
+    voice_id: str = Field(..., alias="voiceId", description="使用するボイス ID")
+    instructions: Optional[str] = Field(default=None, description="システムプロンプト")
+    language: Optional[str] = Field(default=None, description="Azure Speech の認識言語")
+    phrase_list: Optional[List[str]] = Field(default=None, alias="phraseList", description="語句ブースト候補")
+    semantic_vad: str = Field(default="azure_semantic_vad", alias="semanticVad", description="VAD モード")
+    enable_eou: bool = Field(default=True, alias="enableEou", description="EOU を有効化するか")
+    agent_id: Optional[str] = Field(default=None, alias="agentId", description="Agent Service の ID")
+    custom_speech_endpoint: Optional[str] = Field(default=None, alias="customSpeechEndpoint", description="Custom Speech エンドポイント")
+    avatar_id: Optional[str] = Field(default=None, alias="avatarId", description="クライアント側で参照するアバター ID")
+
+
+class LiveVoiceSessionConfigureMessage(BaseModel):
+    """セッション構成メッセージ。"""
+
+    type: Literal["session.configure"]
+    payload: LiveVoiceSessionConfigPayload
+
+
+class LiveVoiceSessionStopMessage(BaseModel):
+    """セッション停止メッセージ。"""
+
+    type: Literal["session.stop"]
+
+
+LiveVoiceSessionClientMessage = Annotated[
+    Union[LiveVoiceSessionConfigureMessage, LiveVoiceSessionStopMessage],
+    Field(discriminator="type"),
+]

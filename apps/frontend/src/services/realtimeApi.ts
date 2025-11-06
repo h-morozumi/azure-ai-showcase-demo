@@ -137,3 +137,9 @@ export const fetchAvatars = async (): Promise<AvatarOptionsApiResponse> =>
 
 export const fetchLanguageOptions = async (): Promise<LanguageOptionsApiResponse> =>
   request<LanguageOptionsApiResponse>('/api/v1/realtime/languages');
+
+export const getRealtimeApiBaseUrl = (): string => API_BASE_URL;
+
+export const getRealtimeApiKey = (): string => API_KEY;
+
+export const buildRealtimeApiUrl = (path: string): string => toUrl(path);
