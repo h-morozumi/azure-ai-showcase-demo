@@ -1,0 +1,35 @@
+<svg width="400" height="250" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg-gradient-agent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#20B2AA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1A9999;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="400" height="250" fill="url(#bg-gradient-agent)"/>
+  
+  <!-- Robot head -->
+  <rect x="160" y="70" width="80" height="70" rx="10" fill="#FFFFFF" opacity="0.9"/>
+  
+  <!-- Antenna -->
+  <line x1="200" y1="70" x2="200" y2="50" stroke="#FFFFFF" stroke-width="3" opacity="0.9"/>
+  <circle cx="200" cy="45" r="5" fill="#FFFFFF" opacity="0.9"/>
+  
+  <!-- Eyes -->
+  <rect x="175" y="90" width="15" height="15" rx="3" fill="#20B2AA"/>
+  <rect x="210" y="90" width="15" height="15" rx="3" fill="#20B2AA"/>
+  
+  <!-- Mouth -->
+  <rect x="185" y="120" width="30" height="3" fill="#20B2AA"/>
+  
+  <!-- Gear icons -->
+  <circle cx="280" cy="100" r="20" fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.7"/>
+  <path d="M 280 85 L 280 115 M 265 100 L 295 100 M 268 90 L 292 110 M 268 110 L 292 90" stroke="#FFFFFF" stroke-width="3" opacity="0.7"/>
+  
+  <circle cx="120" cy="120" r="15" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.6"/>
+  <path d="M 120 108 L 120 132 M 108 120 L 132 120" stroke="#FFFFFF" stroke-width="2" opacity="0.6"/>
+  
+  <text x="200" y="230" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#FFFFFF" text-anchor="middle">
+    AI Agent
+  </text>
+</svg>
