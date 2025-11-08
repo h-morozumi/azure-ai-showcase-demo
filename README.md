@@ -73,6 +73,10 @@ azure-ai-showcase-demo/
 - 共通のドメインモデル／型のパッケージ化（`packages/` ディレクトリを追加予定）
 - CI/CD パイプラインの強化
 
+## ドキュメント
+
+- [リアルタイムアバター実装ガイド](docs/realtime-avatar-implementation.md) - Azure Voice Live API のアバター機能の実装方法とSDK制限の回避策
+
 ## Azure リソース
 
 `infra/` 以下に Bicep テンプレートを配置しています。GitHub Actions からのデプロイを想定したワークフローも `.github/workflows/` に用意しています。

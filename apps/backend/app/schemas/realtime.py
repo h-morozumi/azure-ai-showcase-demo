@@ -195,7 +195,60 @@ class LiveVoiceSessionStopMessage(BaseModel):
     type: Literal["session.stop"]
 
 
+class LiveVoiceSessionAvatarAnswerMessage(BaseModel):
+    """アバター SDP アンサー送信メッセージ。"""
+
+    type: Literal["avatar.answer"]
+    sdp: str = Field(..., description="ブラウザが生成した SDP")
+    description_type: Optional[str] = Field(
+        default="answer",
+        alias="descriptionType",
+        description="SDP 種別。通常は 'answer'",
+    )
+
+
+class AvatarIceCandidatePayload(BaseModel):
+    """ICE Candidate のペイロード。"""
+
+    candidate: str = Field(..., description="ICE candidate 文字列")
+    sdp_mid: Optional[str] = Field(default=None, alias="sdpMid")
+    sdp_m_line_index: Optional[int] = Field(default=None, alias="sdpMLineIndex")
+
+
+class LiveVoiceSessionAvatarIceCandidateMessage(BaseModel):
+    """アバター ICE Candidate 送信メッセージ。"""
+
+    type: Literal["avatar.ice_candidate"]
+    payload: AvatarIceCandidatePayload
+
+
+class SdpOffer(BaseModel):
+    """SDP Offer の型定義。"""
+
+    type: str = Field(..., description="SDP type (通常は 'offer')")
+    sdp: str = Field(..., description="SDP 文字列")
+
+
+class AvatarClientOfferPayload(BaseModel):
+    """クライアントから送信される WebRTC offer。"""
+
+    offer: SdpOffer = Field(..., description="クライアントが作成した SDP offer")
+
+
+class LiveVoiceSessionAvatarClientOfferMessage(BaseModel):
+    """クライアントから送信される WebRTC offer メッセージ。"""
+
+    type: Literal["avatar.client_offer"]
+    payload: AvatarClientOfferPayload
+
+
 LiveVoiceSessionClientMessage = Annotated[
-    Union[LiveVoiceSessionConfigureMessage, LiveVoiceSessionStopMessage],
+    Union[
+        LiveVoiceSessionConfigureMessage,
+        LiveVoiceSessionStopMessage,
+        LiveVoiceSessionAvatarAnswerMessage,
+        LiveVoiceSessionAvatarIceCandidateMessage,
+        LiveVoiceSessionAvatarClientOfferMessage,
+    ],
     Field(discriminator="type"),
 ]

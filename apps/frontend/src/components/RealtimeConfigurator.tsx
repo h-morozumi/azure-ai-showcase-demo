@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLiveVoiceSession } from '../hooks/useLiveVoiceSession';
 import { useRealtimeCapabilities } from '../hooks/useRealtimeCapabilities';
 import { useRealtimeMetadata } from '../hooks/useRealtimeMetadata';
@@ -115,6 +115,8 @@ export const RealtimeConfigurator = () => {
     start: startLiveSession,
     stop: stopLiveSession,
     isStreaming,
+    avatarState,
+    attachAvatarElement,
   } = useLiveVoiceSession();
 
   const [sessionConfigError, setSessionConfigError] = useState<string | null>(null);
@@ -163,6 +165,39 @@ export const RealtimeConfigurator = () => {
     isRealtimeModel,
     openAiVoiceOptions,
   ]);
+
+  const avatarVideoRef = useCallback(
+    (node: HTMLVideoElement | null) => {
+      attachAvatarElement(node);
+      if (node) {
+        node.volume = 1.0;
+        node.muted = false;  // 明示的にミュートを解除
+      }
+    },
+    [attachAvatarElement],
+  );
+
+  const avatarStateLabel = useMemo(() => {
+    switch (avatarState) {
+      case 'ready':
+        return '映像ストリーミング中';
+      case 'connecting':
+        return '映像接続中…';
+      default:
+        return '映像待機中';
+    }
+  }, [avatarState]);
+
+  const avatarStateClass = useMemo(() => {
+    switch (avatarState) {
+      case 'ready':
+        return 'text-emerald-200';
+      case 'connecting':
+        return 'text-amber-200';
+      default:
+        return 'text-slate-300';
+    }
+  }, [avatarState]);
 
   const voiceProviderLabel = useMemo(() => {
     const provider = voiceOptions[0]?.provider;
@@ -448,6 +483,13 @@ export const RealtimeConfigurator = () => {
       .filter((entry) => entry.length > 0);
 
     setSessionConfigError(null);
+
+    console.log('Session start config:', {
+      modelId: model.id,
+      voiceId: voiceCandidate,
+      avatarId: formState.avatarId,
+      avatarIdToSend: formState.avatarId || undefined,
+    });
 
     void startLiveSession({
       modelId: model.id,
@@ -1152,12 +1194,28 @@ export const RealtimeConfigurator = () => {
                 </span>
               </div>
             </div>
-            <div className="mt-6 aspect-video w-full rounded-2xl border border-dashed border-cyan-400/40 bg-slate-950/50" aria-label="アバター映像プレビュー">
-              <div className="flex h-full items-center justify-center text-sm text-slate-500">
-                {selectedAvatar
-                  ? `${selectedAvatar.displayName} の映像をここに描画します。`
-                  : '映像プレビュー（実装時に WebRTC ストリームを描画）'}
-              </div>
+            <div
+              className="relative mt-6 aspect-video w-full overflow-hidden rounded-2xl border border-dashed border-cyan-400/40 bg-slate-950/70"
+              aria-label="アバター映像プレビュー"
+            >
+              <video
+                ref={avatarVideoRef}
+                className="h-full w-full object-cover"
+                playsInline
+                autoPlay
+              />
+              {avatarState !== 'ready' ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-950/70 text-center text-xs text-slate-300">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-200">
+                    {avatarStateLabel}
+                  </span>
+                  <p className="max-w-[80%] text-[11px] text-slate-400">
+                    {selectedAvatar
+                      ? `${selectedAvatar.displayName} のアバター映像を準備しています。`
+                      : '会話を開始すると選択したアバターの映像が表示されます。'}
+                  </p>
+                </div>
+              ) : null}
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <button
@@ -1199,6 +1257,7 @@ export const RealtimeConfigurator = () => {
                 <p className={`mt-1 text-sm font-semibold ${isStreaming ? 'text-emerald-200' : 'text-slate-200'}`}>
                   {isStreaming ? '音声ストリーミング中' : 'マイク待機中'}
                 </p>
+                <p className={`mt-1 text-xs font-medium ${avatarStateClass}`}>アバター: {avatarStateLabel}</p>
               </div>
               <div>
                 <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">送信音声</p>
@@ -1214,7 +1273,43 @@ export const RealtimeConfigurator = () => {
               </div>
             </div>
             <div className="mt-6">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">イベントログ</p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">イベントログ</p>
+                <button
+                  onClick={() => {
+                    const logText = sessionLogsToRender
+                      .map((entry) => `${entry.level.toUpperCase()}\n${formatTimestamp(entry.timestamp)}\n${entry.message}`)
+                      .join('\n\n');
+                    navigator.clipboard
+                      .writeText(logText)
+                      .then(() => {
+                        // コピー成功のフィードバック（オプション）
+                        console.log('ログをクリップボードにコピーしました');
+                      })
+                      .catch((err) => {
+                        console.error('クリップボードへのコピーに失敗しました:', err);
+                      });
+                  }}
+                  className="rounded-lg bg-slate-700/50 p-1.5 text-slate-300 transition hover:bg-slate-700 hover:text-white disabled:opacity-50"
+                  disabled={sessionLogsToRender.length === 0}
+                  title="ログをクリップボードにコピー"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="h-4 w-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75"
+                    />
+                  </svg>
+                </button>
+              </div>
               <div className="mt-3 max-h-48 overflow-y-auto rounded-2xl border border-white/10 bg-slate-900/70">
                 <ul className="divide-y divide-white/5">
                   {sessionLogsToRender.length > 0 ? (
