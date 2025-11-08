@@ -1036,7 +1036,7 @@ export const useLiveVoiceSession = () => {
           break;
       }
     },
-    [appendLog, cleanupAvatarConnection, handleAvatarIceCandidate, handleAvatarOffer, setAvatarState, updateMetrics],
+    [appendLog, cleanupAvatarConnection, handleAvatarAnswer, handleAvatarIceCandidate, handleAvatarOffer, handleAvatarSessionUpdated, setAvatarState, updateMetrics],
   );
 
   const start = useCallback(
