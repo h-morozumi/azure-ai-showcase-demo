@@ -484,12 +484,12 @@ export const RealtimeConfigurator = () => {
 
     setSessionConfigError(null);
 
-    console.log('Session start config:', {
-      modelId: model.id,
-      voiceId: voiceCandidate,
-      avatarId: formState.avatarId,
-      avatarIdToSend: formState.avatarId || undefined,
-    });
+    // console.log('Session start config:', {
+    //   modelId: model.id,
+    //   voiceId: voiceCandidate,
+    //   avatarId: formState.avatarId,
+    //   avatarIdToSend: formState.avatarId || undefined,
+    // });
 
     void startLiveSession({
       modelId: model.id,
@@ -1284,10 +1284,10 @@ export const RealtimeConfigurator = () => {
                       .writeText(logText)
                       .then(() => {
                         // コピー成功のフィードバック（オプション）
-                        console.log('ログをクリップボードにコピーしました');
+                        // console.log('ログをクリップボードにコピーしました');
                       })
-                      .catch((err) => {
-                        console.error('クリップボードへのコピーに失敗しました:', err);
+                      .catch(() => {
+                        // console.error('クリップボードへのコピーに失敗しました:', err);
                       });
                   }}
                   className="rounded-lg bg-slate-700/50 p-1.5 text-slate-300 transition hover:bg-slate-700 hover:text-white disabled:opacity-50"

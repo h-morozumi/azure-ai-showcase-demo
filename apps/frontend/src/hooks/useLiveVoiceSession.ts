@@ -90,8 +90,9 @@ const buildWebSocketUrl = (path: string): string => {
  * フォールバック用にここにも保持
  */
 
+// @ts-expect-error - フォールバック用に保持
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const floatToPcm16Buffer = (input: Float32Array): ArrayBuffer => {
+const _floatToPcm16Buffer = (input: Float32Array): ArrayBuffer => {
   const buffer = new ArrayBuffer(input.length * PCM_FRAME_SIZE);
   const view = new DataView(buffer);
 
@@ -103,8 +104,9 @@ const floatToPcm16Buffer = (input: Float32Array): ArrayBuffer => {
   return buffer;
 };
 
+// @ts-expect-error - フォールバック用に保持
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const resampleToTarget = (
+const _resampleToTarget = (
   input: Float32Array,
   inputRate: number,
   targetRate: number,
@@ -640,7 +642,7 @@ export const useLiveVoiceSession = () => {
         appendLog('info', 'WebRTC offer を作成中...');
         const offer = await peerConnection.createOffer();
         appendLog('info', `Offer 作成完了: type=${offer.type}`);
-        console.log('[WebRTC] Created offer SDP:', offer.sdp);
+        // console.log('[WebRTC] Created offer SDP:', offer.sdp);
 
         appendLog('info', 'Local description を設定中...');
         await peerConnection.setLocalDescription(offer);
@@ -709,7 +711,7 @@ export const useLiveVoiceSession = () => {
 
       try {
         appendLog('info', `Azure から answer を受信: type=${data.answer.type}`);
-        console.log('[WebRTC] Received answer SDP:', data.answer.sdp);
+        // console.log('[WebRTC] Received answer SDP:', data.answer.sdp);
 
         const remoteDesc = new RTCSessionDescription({
           type: 'answer',
@@ -962,11 +964,11 @@ export const useLiveVoiceSession = () => {
           appendLog('info', `セッション開始: ${(event.data?.sessionId as string) ?? 'unknown'}`);
           if (event.data?.avatar) {
             const avatarPayload = event.data.avatar as AvatarSessionInfoPayload;
-            console.log('[session.updated] アバター設定を受信:', avatarPayload);
+            // console.log('[session.updated] アバター設定を受信:', avatarPayload);
             
             // Azure は offer を提供しないため、クライアント側で offer を作成
             if (avatarPayload.iceServers && avatarStateRef.current !== 'ready') {
-              console.log('[session.updated] クライアント側で WebRTC offer を作成します');
+              // console.log('[session.updated] クライアント側で WebRTC offer を作成します');
               void handleAvatarSessionUpdated(avatarPayload);
             }
           }
@@ -998,7 +1000,7 @@ export const useLiveVoiceSession = () => {
           void handleAvatarOffer(event.data as AvatarOfferEventPayload);
           break;
         case 'avatar.answer':
-          console.log('[avatar.answer] Azure から answer を受信:', event.data);
+          // console.log('[avatar.answer] Azure から answer を受信:', event.data);
           void handleAvatarAnswer(event.data as { answer: { type: string; sdp: string } });
           break;
         case 'avatar.ice_candidate':
