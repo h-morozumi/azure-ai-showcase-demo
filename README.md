@@ -1,6 +1,8 @@
 # Azure AI Showcase Demo
 
-Azure AI Service（Speech Service、Document Intelligence など）と Azure AI Foundry（LLM、Agent）を活用したショーケース アプリケーションです。フロントエンドとバックエンドを同一リポジトリで管理するモノレポ構成に刷新し、将来的な機能拡張とチーム開発を見据えた基盤を整備しています。
+Azureが提供しているAIサービスを活用したデモアプリケーションのショーケースです。Azure AI Foundry や Azure OpenAI Service、Azure AI Serviceなどを使ったアプリケーション開発の参考としてご利用ください。
+
+フロントエンドはReact（TypeScript）、バックエンドはFastAPI（Python）で構築されています。モノレポ形式で管理されており、pnpmとuvを使用して依存関係を管理しています。
 
 ## 主なコンポーネント
 
@@ -24,16 +26,17 @@ cd azure-ai-showcase-demo
 # ワークスペース全体の依存関係を解決
 pnpm install
 
-# フロントエンド開発サーバー
-pnpm frontend:dev
+# フロントエンドの依存関係をインストール
+cd apps/frontend
+pnpm install
 
-# バックエンド（FastAPI）の準備
-cd apps/backend
+# バックエンド（FastAPI）の依存関係をインストール
+cd ../backend
 uv sync --group dev
-uv run fastapi dev app/main.py
 ```
 
-`.env` などの機密情報は各アプリ配下で管理してください。
+各アプリケーションの環境変数は、`.env.example` ファイルを参考に設定してください。
+`.env` ファイルは、各アプリケーションディレクトリに配置します。
 
 ## リポジトリ構成
 
@@ -41,16 +44,9 @@ uv run fastapi dev app/main.py
 azure-ai-showcase-demo/
 ├── apps/
 │   ├── backend/          # FastAPI バックエンド（uv 管理）
-│   │   ├── app/
-│   │   │   └── main.py
-│   │   ├── pyproject.toml
-│   │   └── README.md
 │   └── frontend/         # React フロントエンド（pnpm ワークスペース）
-│       ├── src/
-│       ├── Dockerfile
-│       ├── package.json
-│       └── README.md
 ├── infra/                # Bicep テンプレート
+├── docs/                 # ドキュメント
 ├── package.json          # ワークスペース共通スクリプト
 ├── pnpm-workspace.yaml
 └── pnpm-lock.yaml
@@ -63,23 +59,16 @@ azure-ai-showcase-demo/
 | `pnpm frontend:dev` | フロントエンド開発サーバーを起動 |
 | `pnpm frontend:build` | フロントエンドをビルド |
 | `pnpm frontend:lint` | フロントエンドの lint を実行 |
-| `uv run fastapi dev app/main.py` | バックエンドの開発サーバーを起動 |
-| `uv run pytest` | バックエンドのテスト実行（将来追加予定） |
-
-## 今後の拡張
-
-- フロントエンドとバックエンド間の API 連携実装
-- Azure AI サービスとの実際の統合
-- 共通のドメインモデル／型のパッケージ化（`packages/` ディレクトリを追加予定）
-- CI/CD パイプラインの強化
-
-## ドキュメント
-
-- [リアルタイムアバター実装ガイド](docs/realtime-avatar-implementation.md) - Azure Voice Live API のアバター機能の実装方法とSDK制限の回避策
+| `pnpm backend:dev` | バックエンドの開発サーバーを起動 |
+| `pnpm backend:test` | バックエンドのテスト実行（将来追加予定） |
 
 ## Azure リソース
 
 `infra/` 以下に Bicep テンプレートを配置しています。GitHub Actions からのデプロイを想定したワークフローも `.github/workflows/` に用意しています。
+
+## ドキュメント
+
+- [リアルタイムアバター実装ガイド](docs/realtime-avatar-implementation.md) - Azure Voice Live API のアバター機能の実装方法とSDK制限の回避策
 
 ## ライセンス
 
