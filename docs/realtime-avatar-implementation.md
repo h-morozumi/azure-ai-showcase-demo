@@ -44,15 +44,13 @@ Azure Voice Live API は、リアルタイムの音声会話と、オプショ�
 
 **Python SDK (`azure-ai-voicelive` v1.1.0) は、アバター機能の WebRTC シグナリングをサポートしていません。**
 
-#### JavaScript SDK との比較
-
-| 機能 | JavaScript SDK | Python SDK |
-|------|----------------|------------|
-| 音声認識・合成 | ✅ サポート | ✅ サポート |
-| 会話管理 | ✅ サポート | ✅ サポート |
-| **Avatar WebRTC** | ✅ `avatarSynthesizer.startAvatarAsync()` | ❌ **未サポート** |
-| Avatar イベント処理 | ✅ `session.avatar.*` イベント | ❌ **未サポート** |
-| Avatar チャネル | ✅ `connection.avatar` | ❌ **未実装** |
+| 機能 | Python SDK |
+|------|------------|
+| 音声認識・合成 |  ✅ サポート |
+| 会話管理 | ✅ サポート |
+| **Avatar WebRTC** |  ❌ **未サポート** |
+| Avatar イベント処理 |  ❌ **未サポート** |
+| Avatar チャネル |  ❌ **未実装** |
 
 #### 具体的な不足機能
 
