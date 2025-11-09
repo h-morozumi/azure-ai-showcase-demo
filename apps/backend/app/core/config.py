@@ -27,9 +27,9 @@ def _resolve_voice_live_endpoint() -> str:
     if endpoint and endpoint.strip():
         return endpoint.strip()
 
-    legacy = os.getenv("AZURE_VOICELIVE_ENDPOINT")
-    if legacy and legacy.strip():
-        return legacy.strip()
+    # legacy = os.getenv("AZURE_VOICELIVE_ENDPOINT")
+    # if legacy and legacy.strip():
+    #     return legacy.strip()
 
     return "wss://api.voicelive.com/v1"
 
@@ -44,23 +44,11 @@ class Settings:
     app_api_key: Optional[str]
     allowed_models: List[str]
 
-    speech_region: Optional[str]
-    speech_key: Optional[str]
     voice_live_deployment_id: str
     voice_live_agent_id: Optional[str]
     voice_live_endpoint: str
     voice_live_api_key: Optional[str]
     avatar_default_character: str
-
-    openai_endpoint: Optional[str]
-    openai_api_key: Optional[str]
-    openai_api_version: Optional[str]
-    openai_chat_deployment_id: Optional[str]
-    openai_realtime_deployment_id: Optional[str]
-
-    agent_endpoint: Optional[str]
-    agent_api_key: Optional[str]
-    agent_id: Optional[str]
 
 
 @lru_cache(maxsize=1)
@@ -72,20 +60,10 @@ def get_settings() -> Settings:
         log_level=os.getenv("APP_LOG_LEVEL", "info"),
         allowed_origins=_split_csv(os.getenv("APP_ALLOWED_ORIGINS", "http://localhost:5173")),
         app_api_key=_to_optional(os.getenv("APP_API_KEY")),
-        allowed_models=_split_csv(os.getenv("APP_ALLOWED_MODELS")),
-        speech_region=_to_optional(os.getenv("AZURE_SPEECH_REGION")),
-        speech_key=_to_optional(os.getenv("AZURE_SPEECH_KEY")),
+        allowed_models=_split_csv(os.getenv("AZURE_VOICE_LIVE_ALLOWED_MODELS","gpt-realtime")),
         voice_live_deployment_id=os.getenv("AZURE_VOICE_LIVE_DEPLOYMENT_ID", "gpt-realtime"),
         voice_live_agent_id=_to_optional(os.getenv("AZURE_VOICE_LIVE_AGENT_ID")),
         voice_live_endpoint=_resolve_voice_live_endpoint(),
         voice_live_api_key=_to_optional(os.getenv("AZURE_VOICE_LIVE_API_KEY")),
         avatar_default_character=os.getenv("AZURE_AVATAR_DEFAULT_CHARACTER", "lisa-casual-sitting"),
-        openai_endpoint=_to_optional(os.getenv("AZURE_OPENAI_ENDPOINT")),
-        openai_api_key=_to_optional(os.getenv("AZURE_OPENAI_API_KEY")),
-        openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-06-01"),
-        openai_chat_deployment_id=_to_optional(os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT_ID")),
-        openai_realtime_deployment_id=_to_optional(os.getenv("AZURE_OPENAI_REALTIME_DEPLOYMENT_ID")),
-        agent_endpoint=_to_optional(os.getenv("AZURE_AGENT_ENDPOINT")),
-        agent_api_key=_to_optional(os.getenv("AZURE_AGENT_API_KEY")),
-        agent_id=_to_optional(os.getenv("AZURE_AGENT_ID")),
     )

@@ -1,8 +1,19 @@
 # GitHub Copilot カスタムインストラクション
 
+ユーザへの回答は、すべて日本語で行ってください。
+
 ## プロジェクト概要
 
 このプロジェクトは、Azure AI Service と AI Foundry を活用したデモショーケースアプリケーションです。フロントエンドとバックエンドで構成されるフルスタックアプリケーションとして開発されています。
+プロジェクト構成は、モノレポ形式を採用し、以下のディレクトリ構成となっています。
+```
+.github/
+├── copilot-instructions.md   # Copilot カスタムインストラクション
+apps/
+├── frontend/                 # フロントエンドアプリケーション (React + TypeScript)
+├── backend/                  # バックエンドアプリケーション (FastAPI + Python)
+```
+
 
 ## 技術スタック
 
@@ -35,7 +46,7 @@
 
 #### ファイル構成
 ```
-frontend/src/
+apps/frontend/src/
 ├── components/      # 再利用可能なコンポーネント
 ├── pages/          # ページコンポーネント
 ├── services/       # API 呼び出しロジック
@@ -106,12 +117,15 @@ export const SpeechRecognition: React.FC<SpeechRecognitionProps> = ({ onResult }
 
 #### ファイル構成
 ```
-backend/app/
-├── routers/         # API エンドポイント
+apps/backend/app/
+├── api/             # API エンドポイント
+│   ├── deps.py      # 依存性注入
+│   └── routes/      # ルート定義
+├── config/          # 設定ファイル（アバター、音声、モデル等のオプション定義）
+├── core/            # コア機能
+│   └── config.py    # 環境変数からの設定管理
+├── schemas/         # Pydantic スキーマ
 ├── services/        # ビジネスロジック
-├── models/          # Pydantic モデル
-├── utils/           # ユーティリティ関数
-├── config.py        # 設定管理
 └── main.py          # アプリケーションエントリポイント
 ```
 
@@ -178,22 +192,8 @@ async def synthesize_speech(
 ## Azure AI Service 統合
 
 ### 環境変数
-以下の環境変数を `.env` ファイルで管理：
-
-```env
-# Speech Service
-AZURE_SPEECH_KEY=
-AZURE_SPEECH_REGION=
-
-# Document Intelligence
-AZURE_DOCUMENT_INTELLIGENCE_KEY=
-AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=
-
-# OpenAI
-AZURE_OPENAI_API_KEY=
-AZURE_OPENAI_ENDPOINT=
-AZURE_OPENAI_DEPLOYMENT=
-```
+モノレポ構成の各アプリケーション毎に`.env` ファイルを用意します。機密情報は含めず、`.env.examples` を参考にしてください。
+新たに必要になる環境変数は、`.env.examples` に追加してください。
 
 ### ベストプラクティス
 - エラーハンドリングを適切に実装
