@@ -166,7 +166,7 @@ export const TopPage: React.FC = () => {
               を体験する
             </h1>
             <p className="max-w-2xl text-lg text-slate-300">
-              Azure AI Service と AI Foundry の最新デモを、洗練されたビジュアルで探索しましょう。ユースケースやサービス別にフィルタリングし、求めているソリューションを素早く発見できます。
+              Azure AI Service と AI Foundry の最新デモを、洗練されたビジュアルで探索しましょう。ユースケースやサービス別にフィルタリングし、求めているソリューションを素早く発見できます。。
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <button
